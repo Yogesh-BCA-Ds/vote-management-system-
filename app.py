@@ -9,9 +9,9 @@ def home_page():
 
 @app.route("/login",methods=["POST"])
 def login():
-    data = request.form()
-    username = data['username']
-    password = data['password']
+    print("login route called")
+    username = request.form['username']
+    password = request.form['password']
     conn = sqlite3.connect("database/vote_man.db")
     role = conn.execute("select ROLE from newuser where username=? and password=?",(username,password)).fetchone() 
     conn.commit()
