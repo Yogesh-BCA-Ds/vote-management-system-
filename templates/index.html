@@ -2,7 +2,7 @@
 <html>
     <head>
 	<title>vote management system </title>
-	<script src="{{url_for('static',filename='script.js')}}"></script>
+	<script src="{{url_for('static',filename='js/script.js')}}"></script>
     <head>
 
     <body>
@@ -11,8 +11,11 @@
            <input type="text" placeholder="user name"><br>
            <input type="password" placeholder="password"><br>
            <button type="submit">login</button>
-           <button onclick="nextpage(event)" value="register.html">new user</button>
        </form>
+
+       <a href="/register">
+           <button> new user </button>
+       </a>
        </div>
     </body>
     
