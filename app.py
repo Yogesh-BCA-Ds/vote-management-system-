@@ -10,9 +10,9 @@ def home_page():
 def register_page():
     return render_template("register.html")
 
-@app.route("/data",methods=["POST"])
+@app.route("/register/data",methods=["POST"])
 def data():
-    fist_name = request.form["first name"]
+    first_name = request.form["first name"]
     last_name = request.form["last name"]
     username = request.form["username"]
     email = request.form["email"]
