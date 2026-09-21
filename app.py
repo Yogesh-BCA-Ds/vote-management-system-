@@ -14,10 +14,12 @@ def login():
     password = request.form['password']
     conn = sqlite3.connect("database/vote_man.db")
     role = conn.execute("select ROLE from newuser where username=? and password=?",(username,password)).fetchone() 
-    conn.commit()
+    if role:
+        conn.execute("update newuser set last_login=CURRENT_TIMESTAMP where username=? and password=?",(username,password))
+        conn.commit()
     conn.close()
     if role[0] == "voter":
-        return render_template("voter.html")
+        return render_template("voter.html",username=username)
                                            
 @app.route("/register")
 def register_page():
@@ -54,4 +56,5 @@ def data():
 if __name__ == '__main__':
     print(app.url_map)
     app.run(debug=True)
+
 
