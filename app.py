@@ -2,6 +2,7 @@ from flask import *
 import sqlite3
 
 app = Flask("__name__")
+app.secret_key = "8k4kYOYOYOYO"
 
 @app.route("/")
 def home_page():
@@ -13,14 +14,28 @@ def login():
     username = request.form['username']
     password = request.form['password']
     conn = sqlite3.connect("database/vote_man.db")
-    role = conn.execute("select ROLE from newuser where username=? and password=?",(username,password)).fetchone() 
-    if role:
-        conn.execute("update newuser set last_login=CURRENT_TIMESTAMP where username=? and password=?",(username,password))
+    user  = conn.execute("select user_id,ROLE from newuser where username=? and password=?",(username,password)).fetchone() 
+
+    if user:
+        user_id = user[0]
+        role = user[1]
+        session['user_id'] = user_id
+        session['role'] = role
+        conn.execute("update newuser set last_login=CURRENT_TIMESTAMP where user_id=?",(user_id,))
         conn.commit()
     conn.close()
-    if role[0] == "voter":
+    if user and role == "voter":
         return render_template("voter.html",username=username)
-                                           
+    return "invalid username or password"
+    
+@app.route("/voter",methods=["POST"])
+def voter():
+    phone = request.form["phone"]
+    city = request.form["city"]
+    address = request.form["address"]
+    state = request.form["state"]
+    country = request.form["country"]
+    #conn.execute("insert into voters (                                  
 @app.route("/register")
 def register_page():
     return render_template("register.html")
