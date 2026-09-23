@@ -27,15 +27,21 @@ def login():
     if user and role == "voter":
         return render_template("voter.html",username=username)
     return "invalid username or password"
-    
+
 @app.route("/voter",methods=["POST"])
 def voter():
+    user_id = session['user_id']
     phone = request.form["phone"]
     city = request.form["city"]
     address = request.form["address"]
     state = request.form["state"]
     country = request.form["country"]
-    #conn.execute("insert into voters (                                  
+    conn = sqlite3.connect("database/voter.db")
+    conn.execute("""
+    INSERT INTO voters (user_id, phone, adress, city, state, country)
+    VALUES (?, ?, ?, ?, ?, ?)""", (user_id, phone, address, city, state, country))
+    return jsonify({"message":"updated info"})
+
 @app.route("/register")
 def register_page():
     return render_template("register.html")
@@ -43,6 +49,7 @@ def register_page():
 @app.route("/register/data",methods=["POST"])
 def data():
     conn = sqlite3.connect("database/vote_man.db")
+    conn.row_factory = sqlite3.Row
     first_name = request.form["first name"]
     last_name = request.form["last name"]
     username = request.form["username"]
@@ -55,14 +62,14 @@ def data():
     conn.close()
     l = []
     for i in voter:
-        l.append({  "fname":i[0],
-                    "lname":i[1],
-                    "user_name":i[2],
-                    "email":i[3],
-                    "password":i[4],
-                    "role":i[5],
-                    "register date":i[6],
-                    "login date":i[7]})
+        l.append({  "fname":i['first_name'],
+                    "lname":i['last_name'],
+                    "user_name":i['username'],
+                    "email":i['email'],
+                    "password":i['password'],
+                    "role":i['ROLE'],
+                    "register date":i['date_joined'],
+                    "login date":i['last_login']})
 
     return jsonify({"message":"data added successfully",
                     "data":l})
@@ -71,5 +78,6 @@ def data():
 if __name__ == '__main__':
     print(app.url_map)
     app.run(debug=True)
+
 
 
