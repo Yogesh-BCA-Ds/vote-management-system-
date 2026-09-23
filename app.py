@@ -26,6 +26,8 @@ def login():
     conn.close()
     if user and role == "voter":
         return render_template("voter.html",username=username)
+    if user and role == "admin":
+        return render_template("manager.html",username=username)
     return "invalid username or password"
 
 @app.route("/voter",methods=["POST"])
@@ -42,6 +44,19 @@ def voter():
     VALUES (?, ?, ?, ?, ?, ?)""", (user_id, phone, address, city, state, country))
     return jsonify({"message":"updated info"})
 
+@app.route("/admin",methods=['POST'])
+def admin():
+    title = request.form['title']
+    start_date = request.form['start_date']
+    end_date = request.form['end_date']
+    des = request.form['des']
+    option = request.form['option']
+    elg = request.form['elg']
+    result_date = request.form['result_date']
+    conn = sqlite3.connect("admin.db")
+    conn.execute("insert into admin (title,start_date,end_date,des,option,elg,result_date) values (?,?,?,?,?,?,?)",(title,start_date,end_date,des,option,elg,result_date)
+    return 
+            
 @app.route("/register")
 def register_page():
     return render_template("register.html")

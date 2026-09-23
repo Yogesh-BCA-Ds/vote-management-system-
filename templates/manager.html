@@ -1,0 +1,42 @@
+<!DOCTYPE html5>
+<html>
+    <head>
+	<title>vote management system </title>
+	<script src="{{url_for('static',filename='js/script.js')}}"></script>
+    <head>
+
+    <body>
+       <div id="lg1">
+           <h2>damn you {{username}}</h2>
+           <p>welcome back</p>
+           <form action="{{url_for('admin')}}" method="POST">
+		<input type="text" placeholder="title of the election" name="title"><br>
+		<input type="textarea" placeholder="description" name="des"><br>
+		<label>election start date </label>
+		<input type="date" name="start_date"><br>
+		<label> election end date </label>
+		<input type="date" name="end_date"><br>
+		<h5>election type</h5>
+		<label>local</local>
+		<input type="radio" value="local" name="option"><br>
+                <label>state</local>
+                <input type="radio" value="state" name="option"><br>
+                <label>national</local>
+                <input type="radio" value="national" name="option"><br>
+                <label>organisational</local>
+                <input type="radio" value="org" name="option"><br>
+                <label>eligible regions </label>
+                <select name="elg">
+                    <option value="karnataka">karnataka</option>
+                    <option value="maharashtra">maharashtra</option>
+                    <option value="tamil_nadu">tamil nadu<option>
+                    <option value="all">all<option>
+                </select>
+                <label>result date </label>
+                <input type="date" name="result_date">
+		<button type="submit"> submit </button>
+           </form>
+       </div>
+    </body>
+    
+</html>
