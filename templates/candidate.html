@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Candidate Management</title>
+</head>
+
+<body>
+
+    <h2>Add Candidate</h2>
+
+    <form action="{{ url_for('candidate') }}" method="POST">
+
+        <label>Select Election</label>
+
+        <select name="election_id" required>
+
+            <option value="">-- Select Election --</option>
+
+            {% for election in elections %}
+                <option value="{{ election['election_id'] }}">
+                    {{ election['title'] }}
+                </option>
+            {% endfor %}
+
+        </select>
+
+        <br><br>
+
+        <label>Candidate Name</label>
+        <input type="text"
+               name="name"
+               placeholder="Candidate full name"
+               required>
+
+        <br><br>
+
+        <label>Party / Group</label>
+        <input type="text"
+               name="party"
+               placeholder="Party or group">
+
+        <br><br>
+
+        <label>Manifesto</label>
+        <br>
+
+        <textarea name="manifesto"
+                  placeholder="Candidate bio or agenda"></textarea>
+
+        <br><br>
+
+        <button type="submit">Add Candidate</button>
+
+    </form>
+
+</body>
+</html>

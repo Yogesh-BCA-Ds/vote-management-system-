@@ -1,4 +1,3 @@
-
 from flask import *
 from datetime import datetime
 import sqlite3
@@ -30,6 +29,8 @@ def login():
         return render_template("voter.html",username=username)
     if user and role == "admin":
         return render_template("manager.html",username=username)
+    if user and role == "candidate":
+        return redirect(url_for("candidate"))
     return "invalid username or password"
 
 @app.route("/voter",methods=["POST"])
@@ -40,7 +41,7 @@ def voter():
     address = request.form["address"]
     state = request.form["state"]
     country = request.form["country"]
-    conn = sqlite3.connect("database/voter.db")
+    conn = sqlite3.connect("database/vote_man.db")
     conn.execute("""
     INSERT INTO voters (user_id, phone, adress, city, state, country)
     VALUES (?, ?, ?, ?, ?, ?)""", (user_id, phone, address, city, state, country))
@@ -49,7 +50,7 @@ def voter():
 
 @app.route("/admin",methods=['POST'])
 def admin():
-    conn = sqlite3.connect("database/admin.db")
+    conn = sqlite3.connect("database/vote_man.db")
     title = request.form['title']
     start_date = request.form['start_date']
     end_date = request.form['end_date']
@@ -67,7 +68,7 @@ def admin():
         status = "ongoing"
     else:
         status = "completed"
-    conn.execute("insert into admin (title,start_date,end_date,des,elg,result_date,status,election_type) values (?,?,?,?,?,?,?,?)",
+    conn.execute("insert into election(title,start_date,end_date,des,elg,result_date,status,election_type) values (?,?,?,?,?,?,?,?)",
                      (title,start_date,end_date,des,elg,result_date,status,option))
     conn.commit()
     return jsonify({"message":"success"})
@@ -105,6 +106,49 @@ def data():
     return jsonify({"message":"data added successfully",
                     "data":l})
 
+@app.route("/candidate", methods=["GET", "POST"])
+def candidate():
+
+    conn = sqlite3.connect("database/vote_man.db")
+    conn.row_factory = sqlite3.Row
+
+    if request.method == "GET":
+
+        elections = conn.execute("""
+            SELECT election_id, title
+            FROM election
+            ORDER BY election_id DESC
+        """).fetchall()
+
+        conn.close()
+
+        return render_template(
+            "candidate.html",
+            elections=elections
+        )
+
+    election_id = request.form["election_id"]
+    name = request.form["name"]
+    party = request.form["party"]
+    manifesto = request.form["manifesto"]
+
+    conn.execute("""
+        INSERT INTO candidate
+        (election_id, name, party, manifesto)
+        VALUES (?, ?, ?, ?)
+    """, (
+        election_id,
+        name,
+        party,
+        manifesto
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "message": "Candidate added successfully"
+    })
 
 if __name__ == '__main__':
     print(app.url_map)
