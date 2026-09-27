@@ -1,4 +1,6 @@
+
 from flask import *
+from datetime import datetime
 import sqlite3
 
 app = Flask("__name__")
@@ -42,21 +44,34 @@ def voter():
     conn.execute("""
     INSERT INTO voters (user_id, phone, adress, city, state, country)
     VALUES (?, ?, ?, ?, ?, ?)""", (user_id, phone, address, city, state, country))
+    conn.commit() 
     return jsonify({"message":"updated info"})
 
 @app.route("/admin",methods=['POST'])
 def admin():
+    conn = sqlite3.connect("database/admin.db")
     title = request.form['title']
     start_date = request.form['start_date']
     end_date = request.form['end_date']
     des = request.form['des']
-    option = request.form['option']
     elg = request.form['elg']
     result_date = request.form['result_date']
-    conn = sqlite3.connect("admin.db")
-    conn.execute("insert into admin (title,start_date,end_date,des,option,elg,result_date) values (?,?,?,?,?,?,?)",(title,start_date,end_date,des,option,elg,result_date)
-    return 
-            
+    start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
+    end_date = datetime.strptime(end_date, "%Y-%m-%dT%H:%M")
+    option = request.form['option']
+    now = datetime.now()
+    status = ""
+    if now < start_date:
+        status = "upcoming"
+    elif now <= end_date:
+        status = "ongoing"
+    else:
+        status = "completed"
+    conn.execute("insert into admin (title,start_date,end_date,des,elg,result_date,status,election_type) values (?,?,?,?,?,?,?,?)",
+                     (title,start_date,end_date,des,elg,result_date,status,option))
+    conn.commit()
+    return jsonify({"message":"success"})
+
 @app.route("/register")
 def register_page():
     return render_template("register.html")
@@ -71,7 +86,8 @@ def data():
     email = request.form["email"]
     password = request.form["password"]
     role = request.form["option"]
-    conn.execute("""insert into newuser ("first_name","last_name","username","email","password","ROLE")values (?,?,?,?,?,?)""",(first_name,last_name,username,email,password,role)) 
+    conn.execute("""insert into newuser ("first_name","last_name","username","email","password","ROLE")values (?,?,?,?,?,?)""",
+              (first_name,last_name,username,email,password,role)) 
     conn.commit()
     voter  = conn.execute("select * from newuser").fetchall()
     conn.close()
