@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Voter Dashboard</title>
+</head>
+
+<body>
+
+    <h2>Voter Dashboard</h2>
+
+    <h3>Available Elections</h3>
+
+    {% if elections %}
+
+        {% for election in elections %}
+
+            <div>
+
+                <h3>{{ election["title"] }}</h3>
+
+                <p>{{ election["des"] }}</p>
+
+                <p>
+                    Start: {{ election["start_date"] }}
+                </p>
+
+                <p>
+                    End: {{ election["end_date"] }}
+                </p>
+
+                <form action="{{ url_for('view_election') }}" method="POST">
+
+                    <input
+                        type="hidden"
+                        name="election_id"
+                        value="{{ election['election_id'] }}"
+                    >
+
+                    <button type="submit">
+                        View Election
+                    </button>
+
+                </form>
+
+            </div>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>No ongoing elections.</p>
+
+    {% endif %}
+
+</body>
+
+</html>

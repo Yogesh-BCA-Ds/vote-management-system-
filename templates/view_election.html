@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{ election["title"] }}</title>
+</head>
+
+<body>
+
+    <h2>{{ election["title"] }}</h2>
+
+    <p>{{ election["des"] }}</p>
+
+    <h3>Candidates</h3>
+
+    {% for candidate in candidates %}
+
+        <h4>{{ candidate["name"] }}</h4>
+
+        <p>Party: {{ candidate["party"] }}</p>
+
+        <p>{{ candidate["manifesto"] }}</p>
+
+        <hr>
+
+    {% endfor %}
+
+</body>
+
+</html>	

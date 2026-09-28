@@ -9,29 +9,78 @@ app.secret_key = "8k4kYOYOYOYO"
 def home_page():
     return render_template("index.html")
 
-@app.route("/login",methods=["POST"])
+@app.route("/login", methods=["POST"])
 def login():
-    print("login route called")
-    username = request.form['username']
-    password = request.form['password']
-    conn = sqlite3.connect("database/vote_man.db")
-    user  = conn.execute("select user_id,ROLE from newuser where username=? and password=?",(username,password)).fetchone() 
 
-    if user:
-        user_id = user[0]
-        role = user[1]
-        session['user_id'] = user_id
-        session['role'] = role
-        conn.execute("update newuser set last_login=CURRENT_TIMESTAMP where user_id=?",(user_id,))
-        conn.commit()
+    print("login route called")
+
+    username = request.form["username"]
+    password = request.form["password"]
+
+    conn = sqlite3.connect("database/vote_man.db")
+
+    user = conn.execute(
+        """
+        SELECT user_id, ROLE
+        FROM newuser
+        WHERE username=? AND password=?
+        """,
+        (username, password)
+    ).fetchone()
+
+    if not user:
+        conn.close()
+        return "invalid username or password"
+
+    user_id = user[0]
+    role = user[1]
+
+    session["user_id"] = user_id
+    session["role"] = role
+
+    conn.execute(
+        """
+        UPDATE newuser
+        SET last_login=CURRENT_TIMESTAMP
+        WHERE user_id=?
+        """,
+        (user_id,)
+    )
+    conn.commit()
+
+    if role == "voter":
+
+        voter_profile = conn.execute(
+            """
+            SELECT profile_id
+            FROM voters
+            WHERE user_id=?
+            """,
+            (user_id,)
+        ).fetchone()
+
+        conn.close()
+
+        if voter_profile:
+            return redirect(url_for("voter_dashboard"))
+
+        return render_template(
+            "voter.html",
+            username=username
+        )
+
     conn.close()
-    if user and role == "voter":
-        return render_template("voter.html",username=username)
-    if user and role == "admin":
-        return render_template("manager.html",username=username)
-    if user and role == "candidate":
+
+    if role == "admin":
+        return render_template(
+            "manager.html",
+            username=username
+        )
+
+    if role == "candidate":
         return redirect(url_for("candidate"))
-    return "invalid username or password"
+
+    return "invalid role"
 
 @app.route("/voter",methods=["POST"])
 def voter():
@@ -149,6 +198,53 @@ def candidate():
     return jsonify({
         "message": "Candidate added successfully"
     })
+
+@app.route("/voter/dashboard")
+def voter_dashboard():
+
+    conn = sqlite3.connect("database/vote_man.db")
+    conn.row_factory = sqlite3.Row
+
+    elections = conn.execute("""
+        SELECT *
+        FROM election
+        WHERE status = 'ongoing'
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "voter_dashboard.html",
+        elections=elections
+    )
+
+@app.route("/view_election", methods=["POST"])
+def view_election():
+
+    election_id = request.form["election_id"]
+
+    conn = sqlite3.connect("database/vote_man.db")
+    conn.row_factory = sqlite3.Row
+
+    election = conn.execute("""
+        SELECT *
+        FROM election
+        WHERE election_id = ?
+    """, (election_id,)).fetchone()
+
+    candidates = conn.execute("""
+        SELECT *
+        FROM candidate
+        WHERE election_id = ?
+    """, (election_id,)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "view_election.html",
+        election=election,
+        candidates=candidates
+    )
 
 if __name__ == '__main__':
     print(app.url_map)
