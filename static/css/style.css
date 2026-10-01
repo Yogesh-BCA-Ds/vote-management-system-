@@ -1,0 +1,262 @@
+/* Login Page */
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+
+/* Main login box */
+
+#lg1 {
+    width: 350px;
+    padding: 40px;
+
+    background: rgba(255, 255, 255, 0.95);
+
+    border-radius: 18px;
+
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+
+    text-align: center;
+}
+
+
+/* Input fields */
+
+#lg1 input {
+    width: 100%;
+    padding: 13px 15px;
+
+    margin-bottom: 18px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    font-size: 15px;
+
+    box-sizing: border-box;
+
+    outline: none;
+
+    background: #f9fafb;
+
+    transition: 0.2s;
+}
+
+
+#lg1 input:focus {
+    border-color: #667eea;
+
+    background: white;
+
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+
+/* Buttons */
+
+#lg1 button {
+    width: 100%;
+
+    padding: 13px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #667eea;
+    color: white;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+#lg1 button:hover {
+    background: #5568d9;
+
+    transform: translateY(-1px);
+}
+
+
+/* New user button */
+
+#lg1 a {
+    display: block;
+
+    margin-top: 14px;
+
+    text-decoration: none;
+}
+
+
+#lg1 a button {
+    background: #374151;
+}
+
+
+#lg1 a button:hover {
+    background: #1f2937;
+}
+
+
+/* Mobile */
+
+@media (max-width: 500px) {
+
+    #lg1 {
+        width: calc(100% - 50px);
+        padding: 30px 20px;
+    }
+}
+
+/* =========================================
+   CANDIDATE MANAGEMENT PAGE
+========================================= */
+
+#candidate-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 30px 20px;
+}
+
+
+/* Candidate form */
+
+#candidate-page form {
+    width: 100%;
+    max-width: 550px;
+
+    background: white;
+    padding: 35px;
+
+    border-radius: 16px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+}
+
+
+/* Heading */
+
+#candidate-page h2 {
+    text-align: center;
+    margin-bottom: 28px;
+
+    color: #1e293b;
+}
+
+
+/* Labels */
+
+#candidate-page label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-weight: 600;
+    color: #334155;
+}
+
+
+/* Inputs, select and textarea */
+
+#candidate-page input,
+#candidate-page select,
+#candidate-page textarea {
+    width: 100%;
+
+    padding: 12px 14px;
+
+    margin-bottom: 20px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+
+    font-size: 15px;
+
+    box-sizing: border-box;
+
+    background: #f8fafc;
+
+    outline: none;
+}
+
+
+/* Focus effect */
+
+#candidate-page input:focus,
+#candidate-page select:focus,
+#candidate-page textarea:focus {
+    border-color: #667eea;
+
+    background: white;
+
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+}
+
+
+/* Manifesto */
+
+#candidate-page textarea {
+    min-height: 130px;
+
+    resize: vertical;
+}
+
+
+/* Add Candidate button */
+
+#candidate-page button {
+    width: 100%;
+
+    padding: 13px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #667eea;
+    color: white;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+#candidate-page button:hover {
+    background: #5568d9;
+
+    transform: translateY(-1px);
+}
+
+
+/* Mobile */
+
+@media (max-width: 600px) {
+
+    #candidate-page {
+        padding: 20px 15px;
+    }
+
+    #candidate-page form {
+        padding: 25px 20px;
+    }
+}

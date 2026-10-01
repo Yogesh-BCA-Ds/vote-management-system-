@@ -2,12 +2,10 @@
 <html>
 <head>
     <title>Candidate Management</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
 </head>
 
-<body>
-
-    <h2>Add Candidate</h2>
-
+<body id = "candidate-page">
     <form action="{{ url_for('candidate') }}" method="POST">
 
         <label>Select Election</label>
