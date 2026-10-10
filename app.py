@@ -136,6 +136,18 @@ def data():
     email = request.form["email"]
     password = request.form["password"]
     role = request.form["option"]
+    # Check whether username already exists
+    existing_user = conn.execute(
+        "SELECT user_id FROM newuser WHERE username = ?",
+        (username,)
+    ).fetchone()
+
+    if existing_user:
+        conn.close()
+        return render_template(
+            "register.html",
+            error="Username already exists. Please choose another."
+        )
     conn.execute("""insert into newuser ("first_name","last_name","username","email","password","ROLE")values (?,?,?,?,?,?)""",
               (first_name,last_name,username,email,password,role)) 
     conn.commit()
