@@ -260,3 +260,207 @@ body {
         padding: 25px 20px;
     }
 }
+
+/*===========================================================================*/
+/* Voter Dashboard Layout */
+body.voter-dashboard {
+    display: block !important;
+    min-height: 100vh;
+    margin: 0;
+    padding: 35px 20px;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    color: #e2e8f0;
+    background: linear-gradient(135deg, #0f172a, #1e3a8a);
+}
+
+/* Center the headings */
+body.voter-dashboard > h2,
+body.voter-dashboard > h3 {
+    display: block;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto 20px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+body.voter-dashboard > h2 {
+    font-size: 32px;
+    color: #c7d2fe;
+}
+
+body.voter-dashboard > h3 {
+    font-size: 21px;
+    margin-bottom: 30px;
+}
+
+/* Center election cards */
+body.voter-dashboard > div {
+    display: block;
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto 20px;
+    padding: 25px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: 0.25s ease;
+}
+
+body.voter-dashboard > div:hover {
+    transform: translateY(-4px);
+    border-color: #a5b4fc;
+}
+
+body.voter-dashboard > div h3 {
+    color: #c7d2fe;
+    font-size: 23px;
+}
+
+body.voter-dashboard > div p {
+    line-height: 1.6;
+    color: #e2e8f0;
+}
+
+/* View Election button */
+body.voter-dashboard button {
+    width: 100%;
+    padding: 13px;
+    border: 0;
+    border-radius: 9px;
+    background: #818cf8;
+    color: #0f172a;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+body.voter-dashboard button:hover {
+    background: #c7d2fe;
+    transform: scale(1.01);
+}
+
+body.voter-dashboard hr {
+    display: none;
+}
+
+body.voter-dashboard > p {
+    text-align: center;
+    margin: 30px auto;
+}
+
+/* Small screens */
+@media (max-width: 600px) {
+    body.voter-dashboard {
+        padding: 25px 15px;
+    }
+
+    body.voter-dashboard > h2 {
+        font-size: 27px;
+    }
+
+    body.voter-dashboard > div {
+        padding: 18px;
+    }
+}
+
+/*==============================================================================*/
+
+
+/* View Election Page */
+body.view-election {
+    margin: 0;
+    min-height: 100vh;
+    padding: 35px 20px;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    color: #e2e8f0;
+    background: linear-gradient(135deg, #0f172a, #1e3a8a);
+}
+
+/* Election title */
+body.view-election > h2 {
+    text-align: center;
+    font-size: 32px;
+    color: #c7d2fe;
+    margin: 10px 0 25px;
+}
+
+/* Election description */
+body.view-election > p {
+    max-width: 750px;
+    margin: 0 auto 35px;
+    padding: 22px;
+    box-sizing: border-box;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    line-height: 1.8;
+    color: #cbd5e1;
+}
+
+/* Candidates heading */
+body.view-election > h3 {
+    max-width: 750px;
+    margin: 0 auto 20px;
+    color: #a5b4fc;
+    font-size: 23px;
+}
+
+/* Candidate cards */
+body.view-election > h4 {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 22px 22px 8px;
+    box-sizing: border-box;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-bottom: none;
+    border-radius: 14px 14px 0 0;
+    color: #a5b4fc;
+    font-size: 21px;
+}
+
+body.view-election > h4 + p,
+body.view-election > h4 + p + p {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 8px 22px;
+    box-sizing: border-box;
+    background: #1e293b;
+    border-left: 1px solid #334155;
+    border-right: 1px solid #334155;
+    color: #cbd5e1;
+    line-height: 1.7;
+}
+
+/* Card bottom */
+body.view-election > h4 + p + p + hr {
+    display: block;
+    max-width: 750px;
+    margin: 0 auto 22px;
+    border: none;
+    border-bottom: 1px solid #475569;
+    background: #1e293b;
+    padding-bottom: 18px;
+    border-radius: 0 0 14px 14px;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    body.view-election {
+        padding: 25px 15px;
+    }
+
+    body.view-election > h2 {
+        font-size: 26px;
+    }
+
+    body.view-election > p {
+        padding: 17px;
+    }
+}
+
