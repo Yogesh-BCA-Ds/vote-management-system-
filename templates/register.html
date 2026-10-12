@@ -2,9 +2,11 @@
 <html>
 <head>
     <title>Registration</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}"> 
 </head>
 
-<body>
+<body class="register-page">
     <form action="{{ url_for('data') }}" method="POST">
 
         {% if error %}
