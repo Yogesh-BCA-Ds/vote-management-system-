@@ -1,49 +1,189 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Registration</title>
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/style.css') }}"> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1120">
+    <title>Create account | CivicVote Portal</title>
+    <style>
+
+:root {
+    --bg: #0b1120;
+    --surface: rgba(17, 24, 39, .88);
+    --surface-soft: #172033;
+    --text: #f8fafc;
+    --muted: #aab6cc;
+    --primary: #818cf8;
+    --primary-dark: #6366f1;
+    --border: rgba(148, 163, 184, .22);
+    --success: #34d399;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text);
+    background: radial-gradient(ellipse at top left, rgba(99,102,241,.24), transparent 38%),
+                radial-gradient(ellipse at bottom right, rgba(14,165,233,.12), transparent 35%), var(--bg);
+    line-height: 1.6;
+}
+a { color: inherit; }
+.site-header {
+    width: 100%; border-bottom: 1px solid var(--border);
+    background: rgba(8, 13, 27, .78); backdrop-filter: blur(14px);
+}
+.nav-wrap {
+    width: min(1120px, calc(100% - 40px)); min-height: 74px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+}
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; font-weight: 800; letter-spacing: -.03em; }
+.brand-mark {
+    width: 39px; height: 39px; display: grid; place-items: center; border-radius: 12px;
+    background: linear-gradient(135deg, #818cf8, #6366f1); color: white; font-size: 19px;
+    box-shadow: 0 8px 24px rgba(99,102,241,.28);
+}
+.brand-name { font-size: 17px; }
+.nav-note { color: var(--muted); font-size: 13px; }
+main { width: min(1120px, calc(100% - 40px)); margin: 0 auto; flex: 1; padding: 48px 0 56px; }
+.hero { max-width: 760px; margin: 0 auto 28px; text-align: center; }
+.eyebrow { color: #a5b4fc; text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 800; }
+h1, h2, h3, h4, p { margin-top: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.12; letter-spacing: -.045em; margin: 10px 0 14px; }
+h2 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; letter-spacing: -.03em; margin-bottom: 10px; }
+h3 { font-size: 19px; margin-bottom: 8px; }
+p { color: var(--muted); }
+.hero p { max-width: 650px; margin: 0 auto; font-size: 16px; }
+.panel, .content-card {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 22px; padding: clamp(22px, 4vw, 36px);
+    box-shadow: 0 22px 70px rgba(0,0,0,.22);
+}
+.form-panel { max-width: 600px; margin: 0 auto; }
+.form-intro { margin-bottom: 24px; }
+.form-intro p { margin-bottom: 0; font-size: 14px; }
+form { width: 100%; }
+.field { margin: 0 0 18px; }
+label { display: block; margin: 0 0 7px; color: #dbe4f4; font-size: 13px; font-weight: 700; }
+input:not([type="radio"]):not([type="checkbox"]), select, textarea {
+    width: 100%; min-height: 46px; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid #334155; color: var(--text); background: #0c1425;
+    font: inherit; font-size: 14px; outline: none; transition: border-color .18s, box-shadow .18s;
+}
+input::placeholder, textarea::placeholder { color: #73819a; }
+input:focus, select:focus, textarea:focus {
+    border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(129,140,248,.15);
+}
+textarea { min-height: 115px; resize: vertical; }
+select option { background: #0c1425; }
+button, .button, a.button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 46px; padding: 12px 18px; border: 0; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;
+    text-decoration: none; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
+    transition: transform .18s, filter .18s; box-shadow: 0 9px 24px rgba(99,102,241,.2);
+}
+button:hover, .button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+button:focus-visible, a:focus-visible { outline: 3px solid #c7d2fe; outline-offset: 3px; }
+button.full, .full { width: 100%; }
+.button-secondary { background: #253149 !important; box-shadow: none !important; border: 1px solid var(--border) !important; }
+.form-links { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.form-links a { color: #c7d2fe; text-decoration: none; font-weight: 700; }
+.form-links a:hover { text-decoration: underline; }
+.choice-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.choice {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 10px; background: rgba(15,23,42,.7); color: #dbe4f4; font-size: 13px;
+}
+.choice label { display: inline; margin: 0; font-weight: 600; cursor: pointer; }
+input[type="radio"] { accent-color: var(--primary); }
+.notice { padding: 12px 14px; margin-bottom: 18px; border-radius: 10px; border: 1px solid rgba(248,113,113,.3); background: rgba(127,29,29,.2); color: #fecaca; font-size: 14px; }
+.site-footer { border-top: 1px solid var(--border); padding: 22px 20px; color: #8491a8; font-size: 12px; text-align: center; }
+.site-footer strong { color: #cbd5e1; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; }
+.content-card { padding: 24px; }
+.card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+.pill { display: inline-flex; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); color: #c7d2fe; background: rgba(99,102,241,.1); font-size: 11px; font-weight: 800; }
+.empty-state { text-align: center; padding: 36px 20px; border: 1px dashed #39465e; border-radius: 16px; }
+.empty-state p { margin-bottom: 0; }
+.divider { height: 1px; background: var(--border); margin: 22px 0; }
+.muted-small { font-size: 12px; color: #8491a8; }
+@media (max-width: 600px) {
+    .nav-wrap { width: calc(100% - 28px); min-height: 66px; }
+    .brand-name { font-size: 15px; }
+    .nav-note { display: none; }
+    main { width: calc(100% - 28px); padding: 32px 0 40px; }
+    .panel, .content-card { border-radius: 17px; }
+    .hero { margin-bottom: 22px; }
+    .hero p { font-size: 14px; }
+    .choice-list { display: grid; grid-template-columns: 1fr 1fr; }
+    button, .button { width: 100%; }
+}
+
+
+    </style>
 </head>
-
-<body class="register-page">
-    <form action="{{ url_for('data') }}" method="POST">
-
+<body>
+<header class="site-header">
+    <div class="nav-wrap">
+        <a class="brand" href="{{ url_for('home_page') }}">
+            <span class="brand-mark" aria-hidden="true">V</span>
+            <span class="brand-name">CivicVote <span style="color:#a5b4fc">Portal</span></span>
+        </a>
+        <span class="nav-note">A clearer, simpler way to participate</span>
+    </div>
+</header>
+<main>
+    <section class="hero">
+        <span class="eyebrow">Get started</span>
+        <h1>Create your account</h1>
+        <p>Register for CivicVote and choose the role that matches how you will use the platform.</p>
+    </section>
+    <section class="panel form-panel">
+        <div class="form-intro">
+            <h2>Account details</h2>
+            <p>Complete the fields below. Your information will be used to set up your portal account.</p>
+        </div>
         {% if error %}
-            <p style="color: red;">{{ error }}</p>
+            <div class="notice" role="alert">{{ error }}</div>
         {% endif %}
-
-        <input type="text"
-               placeholder="Enter your first name"
-               name="first name"><br>
-
-        <input type="text"
-               placeholder="Enter your last name"
-               name="last name"><br>
-
-        <input type="text"
-               placeholder="Enter username"
-               name="username"><br>
-
-        <input type="email"
-               placeholder="Enter your email"
-               name="email"><br>
-
-        <input type="password"
-               placeholder="Enter your password"
-               name="password"><br>
-
-        <label>Voter</label>
-        <input type="radio" name="option" value="voter"><br>
-
-        <label>Admin</label>
-        <input type="radio" name="option" value="admin"><br>
-
-        <label>Candidate</label>
-        <input type="radio" name="option" value="candidate"><br>
-
-        <button type="submit">Register</button>
-
-    </form>
+        <form action="{{ url_for('data') }}" method="POST">
+            <div class="field">
+                <label for="first-name">First name</label>
+                <input id="first-name" type="text" placeholder="Enter your first name" name="first name" autocomplete="given-name" required>
+            </div>
+            <div class="field">
+                <label for="last-name">Last name</label>
+                <input id="last-name" type="text" placeholder="Enter your last name" name="last name" autocomplete="family-name" required>
+            </div>
+            <div class="field">
+                <label for="reg-username">Username</label>
+                <input id="reg-username" type="text" placeholder="Choose a username" name="username" autocomplete="username" required>
+            </div>
+            <div class="field">
+                <label for="email">Email address</label>
+                <input id="email" type="email" placeholder="you@example.com" name="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+                <label for="reg-password">Password</label>
+                <input id="reg-password" type="password" placeholder="Create a password" name="password" autocomplete="new-password" required>
+            </div>
+            <div class="field">
+                <label>Choose your role</label>
+                <div class="choice-list">
+                    <div class="choice"><input id="role-voter" type="radio" name="option" value="voter" required><label for="role-voter">Voter</label></div>
+                    <div class="choice"><input id="role-admin" type="radio" name="option" value="admin"><label for="role-admin">Admin</label></div>
+                    <div class="choice"><input id="role-candidate" type="radio" name="option" value="candidate"><label for="role-candidate">Candidate</label></div>
+                </div>
+            </div>
+            <button class="full" type="submit">Create account</button>
+        </form>
+        <div class="form-links">Already registered? <a href="{{ url_for('home_page') }}">Sign in</a></div>
+    </section>
+</main>
+<footer class="site-footer">
+    <strong>CivicVote Portal</strong> · A voting management experience
+    <div style="margin-top:4px">Designed to make election information easier to access and understand.</div>
+</footer>
 </body>
 </html>
