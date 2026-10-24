@@ -94,8 +94,12 @@ def voter():
     conn.execute("""
     INSERT INTO voters (user_id, phone, adress, city, state, country)
     VALUES (?, ?, ?, ?, ?, ?)""", (user_id, phone, address, city, state, country))
-    conn.commit() 
-    return jsonify({"message":"updated info"})
+    conn.commit()
+    conn.close()
+    return render_template("status.html",title="Profile Updated",
+                            message="your voter profile has been saved successfully.",
+                            link_url=url_for("voter_dashboard"),
+                            link_text="Go to Dashboard")
 
 @app.route("/admin",methods=['POST'])
 def admin():
@@ -120,7 +124,12 @@ def admin():
     conn.execute("insert into election(title,start_date,end_date,des,elg,result_date,status,election_type) values (?,?,?,?,?,?,?,?)",
                      (title,start_date,end_date,des,elg,result_date,status,option))
     conn.commit()
-    return jsonify({"message":"success"})
+    conn.close()
+    return render_template("status.html",
+                            title = "Election Created",
+                            message = "The election has been created successfully",
+                            link_url = url_for("home_page"),
+                            link_text = "Return to home")
 
 @app.route("/register")
 def register_page():
@@ -153,23 +162,14 @@ def data():
     conn.commit()
     voter  = conn.execute("select * from newuser").fetchall()
     conn.close()
-    l = []
-    for i in voter:
-        l.append({  "fname":i['first_name'],
-                    "lname":i['last_name'],
-                    "user_name":i['username'],
-                    "email":i['email'],
-                    "password":i['password'],
-                    "role":i['ROLE'],
-                    "register date":i['date_joined'],
-                    "login date":i['last_login']})
-
-    return jsonify({"message":"data added successfully",
-                    "data":l})
+    return render_template("status.html",
+                           title="Registration Successful",
+                           message="Your account has been created successfully. You can now sign in.",
+                           link_url=url_for("home_page"),
+                           link_text="Sign In")
 
 @app.route("/candidate", methods=["GET", "POST"])
 def candidate():
-
     conn = sqlite3.connect("database/vote_man.db")
     conn.row_factory = sqlite3.Row
 
@@ -207,13 +207,14 @@ def candidate():
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "message": "Candidate added successfully"
-    })
+    return render_template("status.html",
+                           title = "Candidate added",
+                           message = "The candidate has been added successfully.",
+                           link_url = url_for("candidate"),
+                           link_text = "add another candidate")
 
 @app.route("/voter/dashboard")
 def voter_dashboard():
-
     conn = sqlite3.connect("database/vote_man.db")
     conn.row_factory = sqlite3.Row
 
@@ -259,7 +260,6 @@ def view_election():
     )
 
 if __name__ == '__main__':
-    print(app.url_map)
     app.run(debug=True)
 
 

@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ title }} | CivicVote Portal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #172033;
+        }
+
+        .status-card {
+            width: 100%;
+            max-width: 480px;
+            padding: 40px 30px;
+            text-align: center;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(20, 35, 65, 0.10);
+        }
+
+        .success-icon {
+            width: 68px;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 22px;
+            border-radius: 50%;
+            background: #e5f8ed;
+            color: #16834a;
+            font-size: 34px;
+            font-weight: bold;
+        }
+
+        h1 {
+            margin: 0 0 14px;
+            font-size: 27px;
+        }
+
+        p {
+            margin: 0 0 28px;
+            color: #667085;
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .action-link {
+            display: inline-block;
+            padding: 14px 24px;
+            border-radius: 9px;
+            background: #2457d6;
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .action-link:hover {
+            background: #1945b3;
+        }
+
+        .brand {
+            margin-top: 25px;
+            color: #8a94a6;
+            font-size: 13px;
+        }
+
+        @media (max-width: 480px) {
+            .status-card {
+                padding: 32px 22px;
+            }
+
+            h1 {
+                font-size: 23px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="status-card">
+        <div class="success-icon" aria-hidden="true">
+            &#10003;
+        </div>
+
+        <h1>{{ title }}</h1>
+
+        <p>{{ message }}</p>
+
+        <a class="action-link" href="{{ link_url }}">
+            {{ link_text }}
+        </a>
+
+        <div class="brand">
+            CivicVote Portal
+        </div>
+    </main>
+</body>
+</html>
