@@ -1,10 +1,40 @@
 from flask import *
 from datetime import datetime
 import sqlite3
+import re 
 
 app = Flask("__name__")
 app.secret_key = "8k4kYOYOYOYO"
 
+def valid_name(value):
+    return bool(value and re.fullmatch(r"[A-Za-z][A-Za-z '\-]*", value))
+
+
+def valid_email(value):
+    return bool(
+        len(value) <= 254
+        and re.fullmatch(
+            r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+            value
+        )
+    )
+
+
+def get_username():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None
+
+    conn = sqlite3.connect("database/vote_man.db")
+    row = conn.execute(
+        "SELECT username FROM newuser WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+
+    return row[0] if row else None
+    
 @app.route("/")
 def home_page():
     return render_template("index.html")
@@ -81,7 +111,7 @@ def login():
         return redirect(url_for("candidate"))
 
     return "invalid role"
-
+            
 @app.route("/voter",methods=["POST"])
 def voter():
     user_id = session['user_id']
