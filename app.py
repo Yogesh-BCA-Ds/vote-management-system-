@@ -1,257 +1,262 @@
 from flask import *
 from datetime import datetime
-import sqlite3
+import os
+import psycopg
+from psycopg.rows import dict_row
 
-app = Flask("__name__")
-app.secret_key = "8k4kYOYOYOYO"
+app = Flask(__name__)
 
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "local-development-key")
+
+
+# Database connection: Neon PostgreSQL
+def get_db():
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
+        raise RuntimeError("DATABASE_URL environment variable is missing.")
+
+    return psycopg.connect(database_url, row_factory=dict_row)
+
+
+# Home page
 @app.route("/")
 def home_page():
     return render_template("index.html")
 
+
+# Login
 @app.route("/login", methods=["POST"])
 def login():
-
     print("login route called")
 
     username = request.form["username"]
     password = request.form["password"]
 
-    conn = sqlite3.connect("database/vote_man.db")
+    with get_db() as conn:
+        user = conn.execute("""
+            SELECT user_id, role
+            FROM newuser
+            WHERE username = %s AND password = %s
+            """, (username, password)).fetchone()
 
-    user = conn.execute(
-        """
-        SELECT user_id, ROLE
-        FROM newuser
-        WHERE username=? AND password=?
-        """,
-        (username, password)
-    ).fetchone()
+        if not user:
+            return "invalid username or password"
 
-    if not user:
-        conn.close()
-        return "invalid username or password"
+        user_id = user["user_id"]
+        role = user["role"]
 
-    user_id = user[0]
-    role = user[1]
+        session["user_id"] = user_id
+        session["role"] = role
 
-    session["user_id"] = user_id
-    session["role"] = role
+        conn.execute("""
+            UPDATE newuser
+            SET last_login = CURRENT_TIMESTAMP
+            WHERE user_id = %s
+            """, (user_id,))
 
-    conn.execute(
-        """
-        UPDATE newuser
-        SET last_login=CURRENT_TIMESTAMP
-        WHERE user_id=?
-        """,
-        (user_id,)
-    )
-    conn.commit()
+        if role == "voter":
+            voter_profile = conn.execute("""
+                SELECT profile_id
+                FROM voters
+                WHERE user_id = %s
+                """, (user_id,)).fetchone()
 
-    if role == "voter":
+            if voter_profile:
+                return redirect(url_for("voter_dashboard"))
 
-        voter_profile = conn.execute(
-            """
-            SELECT profile_id
-            FROM voters
-            WHERE user_id=?
-            """,
-            (user_id,)
-        ).fetchone()
+            return render_template("voter.html", username=username)
 
-        conn.close()
+        if role == "admin":
+            return render_template("manager.html", username=username)
 
-        if voter_profile:
-            return redirect(url_for("voter_dashboard"))
+        if role == "candidate":
+            return redirect(url_for("candidate"))
 
-        return render_template(
-            "voter.html",
-            username=username
-        )
+        return "invalid role"
 
-    conn.close()
 
-    if role == "admin":
-        return render_template(
-            "manager.html",
-            username=username
-        )
-
-    if role == "candidate":
-        return redirect(url_for("candidate"))
-
-    return "invalid role"
-
-@app.route("/voter",methods=["POST"])
+# Voter profile
+@app.route("/voter", methods=["POST"])
 def voter():
-    user_id = session['user_id']
+    user_id = session["user_id"]
+
     phone = request.form["phone"]
     city = request.form["city"]
     address = request.form["address"]
     state = request.form["state"]
     country = request.form["country"]
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.execute("""
-    INSERT INTO voters (user_id, phone, adress, city, state, country)
-    VALUES (?, ?, ?, ?, ?, ?)""", (user_id, phone, address, city, state, country))
-    conn.commit()
-    conn.close()
-    return render_template("status.html",title="Profile Updated",
-                            message="your voter profile has been saved successfully.",
-                            link_url=url_for("voter_dashboard"),
-                            link_text="Go to Dashboard")
 
-@app.route("/admin",methods=['POST'])
+    with get_db() as conn:
+        conn.execute("""
+            INSERT INTO voters
+                (user_id, phone, adress, city, state, country)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, (user_id, phone, address, city, state, country))
+
+    return render_template(
+        "status.html",
+        title="Profile Updated",
+        message="your voter profile has been saved successfully.",
+        link_url=url_for("voter_dashboard"),
+        link_text="Go to Dashboard"
+    )
+
+
+# Create election
+@app.route("/admin", methods=["POST"])
 def admin():
-    conn = sqlite3.connect("database/vote_man.db")
-    title = request.form['title']
-    start_date = request.form['start_date']
-    end_date = request.form['end_date']
-    des = request.form['des']
-    elg = request.form['elg']
-    result_date = request.form['result_date']
+    title = request.form["title"]
+    start_date = request.form["start_date"]
+    end_date = request.form["end_date"]
+    des = request.form["des"]
+    elg = request.form["elg"]
+    result_date = request.form.get("result_date", "")
+    option = request.form["option"]
+
     start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
     end_date = datetime.strptime(end_date, "%Y-%m-%dT%H:%M")
-    option = request.form['option']
+
+    if result_date:
+        result_date = datetime.strptime(result_date, "%Y-%m-%dT%H:%M")
+    else:
+        result_date = None
+
     now = datetime.now()
-    status = ""
+
     if now < start_date:
         status = "upcoming"
     elif now <= end_date:
         status = "ongoing"
     else:
         status = "completed"
-    conn.execute("insert into election(title,start_date,end_date,des,elg,result_date,status,election_type) values (?,?,?,?,?,?,?,?)",
-                     (title,start_date,end_date,des,elg,result_date,status,option))
-    conn.commit()
-    conn.close()
-    return render_template("status.html",
-                            title = "Election Created",
-                            message = "The election has been created successfully",
-                            link_url = url_for("home_page"),
-                            link_text = "Return to home")
 
+    with get_db() as conn:
+        conn.execute("""
+            INSERT INTO election
+                (title, start_date, end_date, des, elg,
+                 result_date, status, election_type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (title, start_date, end_date, des, elg,
+             result_date, status, option))
+
+    return render_template(
+        "status.html",
+        title="Election Created",
+        message="The election has been created successfully",
+        link_url=url_for("home_page"),
+        link_text="Return to home"
+    )
+
+
+# Registration page
 @app.route("/register")
 def register_page():
     return render_template("register.html")
 
-@app.route("/register/data",methods=["POST"])
+
+# Register user
+@app.route("/register/data", methods=["POST"])
 def data():
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.row_factory = sqlite3.Row
     first_name = request.form["first name"]
     last_name = request.form["last name"]
     username = request.form["username"]
     email = request.form["email"]
     password = request.form["password"]
     role = request.form["option"]
-    # Check whether username already exists
-    existing_user = conn.execute(
-        "SELECT user_id FROM newuser WHERE username = ?",
-        (username,)
-    ).fetchone()
 
-    if existing_user:
-        conn.close()
-        return render_template(
-            "register.html",
-            error="Username already exists. Please choose another."
-        )
-    conn.execute("""insert into newuser ("first_name","last_name","username","email","password","ROLE")values (?,?,?,?,?,?)""",
-              (first_name,last_name,username,email,password,role)) 
-    conn.commit()
-    voter  = conn.execute("select * from newuser").fetchall()
-    conn.close()
-    return render_template("status.html",
-                           title="Registration Successful",
-                           message="Your account has been created successfully. You can now sign in.",
-                           link_url=url_for("home_page"),
-                           link_text="Sign In")
+    with get_db() as conn:
+        existing_user = conn.execute("""
+            SELECT user_id
+            FROM newuser
+            WHERE username = %s
+            """, (username,)).fetchone()
 
-@app.route("/candidate", methods=["GET", "POST"])
-def candidate():
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.row_factory = sqlite3.Row
+        if existing_user:
+            return render_template(
+                "register.html",
+                error="Username already exists. Please choose another."
+            )
 
-    if request.method == "GET":
-
-        elections = conn.execute("""
-            SELECT election_id, title
-            FROM election
-            ORDER BY election_id DESC
-        """).fetchall()
-
-        conn.close()
-
-        return render_template(
-            "candidate.html",
-            elections=elections
-        )
-
-    election_id = request.form["election_id"]
-    name = request.form["name"]
-    party = request.form["party"]
-    manifesto = request.form["manifesto"]
-
-    conn.execute("""
-        INSERT INTO candidate
-        (election_id, name, party, manifesto)
-        VALUES (?, ?, ?, ?)
-    """, (
-        election_id,
-        name,
-        party,
-        manifesto
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return render_template("status.html",
-                           title = "Candidate added",
-                           message = "The candidate has been added successfully.",
-                           link_url = url_for("candidate"),
-                           link_text = "add another candidate")
-
-@app.route("/voter/dashboard")
-def voter_dashboard():
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.row_factory = sqlite3.Row
-
-    elections = conn.execute("""
-        SELECT *
-        FROM election
-        WHERE status = 'ongoing'
-    """).fetchall()
-
-    conn.close()
+        conn.execute("""
+            INSERT INTO newuser
+                (first_name, last_name, username, email, password, role)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, (first_name, last_name, username, email, password, role))
 
     return render_template(
-        "voter_dashboard.html",
-        elections=elections
+        "status.html",
+        title="Registration Successful",
+        message="Your account has been created successfully. You can now sign in.",
+        link_url=url_for("home_page"),
+        link_text="Sign In"
     )
 
+
+# Candidate page
+@app.route("/candidate", methods=["GET", "POST"])
+def candidate():
+    with get_db() as conn:
+        if request.method == "GET":
+            elections = conn.execute("""
+                SELECT election_id, title
+                FROM election
+                ORDER BY election_id DESC
+                """).fetchall()
+
+            return render_template("candidate.html", elections=elections)
+
+        election_id = request.form["election_id"]
+        name = request.form["name"]
+        party = request.form["party"]
+        manifesto = request.form["manifesto"]
+
+        conn.execute("""
+            INSERT INTO candidate
+                (election_id, name, party, manifesto)
+            VALUES (%s, %s, %s, %s)
+            """, (election_id, name, party, manifesto))
+
+    return render_template(
+        "status.html",
+        title="Candidate added",
+        message="The candidate has been added successfully.",
+        link_url=url_for("candidate"),
+        link_text="add another candidate"
+    )
+
+
+# Voter dashboard
+@app.route("/voter/dashboard")
+def voter_dashboard():
+    with get_db() as conn:
+        elections = conn.execute("""
+            SELECT *
+            FROM election
+            WHERE status = 'ongoing'
+            """).fetchall()
+
+    return render_template("voter_dashboard.html", elections=elections)
+
+
+# View election
 @app.route("/view_election", methods=["POST"])
 def view_election():
-
     election_id = request.form["election_id"]
 
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.row_factory = sqlite3.Row
+    with get_db() as conn:
+        election = conn.execute("""
+            SELECT *
+            FROM election
+            WHERE election_id = %s
+            """, (election_id,)).fetchone()
 
-    election = conn.execute("""
-        SELECT *
-        FROM election
-        WHERE election_id = ?
-    """, (election_id,)).fetchone()
-
-    candidates = conn.execute("""
-        SELECT *
-        FROM candidate
-        WHERE election_id = ?
-    """, (election_id,)).fetchall()
-
-    conn.close()
+        candidates = conn.execute("""
+            SELECT *
+            FROM candidate
+            WHERE election_id = %s
+            """, (election_id,)).fetchall()
 
     return render_template(
         "view_election.html",
@@ -259,8 +264,10 @@ def view_election():
         candidates=candidates
     )
 
-if __name__ == '__main__':
-    app.run(debug=True)
 
-
-
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=False
+    )
