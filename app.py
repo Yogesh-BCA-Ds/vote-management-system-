@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import psycopg
 from psycopg.rows import dict_row
+from datetime import datetime,timedelta
 
 app = Flask(__name__)
 
@@ -122,7 +123,7 @@ def admin():
     else:
         result_date = None
 
-    now = datetime.now()
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
 
     if now < start_date:
         status = "upcoming"
