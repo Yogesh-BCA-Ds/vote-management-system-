@@ -1,13 +1,16 @@
 from flask import *
-from datetime import datetime
+from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import psycopg
 from psycopg.rows import dict_row
-from datetime import datetime,timedelta
 
 app = Flask(__name__)
 
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "local-development-key")
+app.secret_key = os.environ.get(
+    "FLASK_SECRET_KEY",
+    "local-development-key"
+)
 
 
 # Database connection: Neon PostgreSQL
@@ -15,9 +18,14 @@ def get_db():
     database_url = os.environ.get("DATABASE_URL")
 
     if not database_url:
-        raise RuntimeError("DATABASE_URL environment variable is missing.")
+        raise RuntimeError(
+            "DATABASE_URL environment variable is missing."
+        )
 
-    return psycopg.connect(database_url, row_factory=dict_row)
+    return psycopg.connect(
+        database_url,
+        row_factory=dict_row
+    )
 
 
 # Home page
@@ -29,23 +37,56 @@ def home_page():
 # Login
 @app.route("/login", methods=["POST"])
 def login():
-    print("login route called")
-
     username = request.form["username"]
     password = request.form["password"]
 
     with get_db() as conn:
         user = conn.execute("""
-            SELECT user_id, role
+            SELECT user_id, role, password
             FROM newuser
-            WHERE username = %s AND password = %s
-            """, (username, password)).fetchone()
+            WHERE username = %s
+            """, (username,)).fetchone()
 
         if not user:
-            return "invalid username or password"
+            return "Invalid username or password", 401
+
+        stored_password = user["password"]
+
+        # Check whether the stored password is already hashed
+        is_hashed = (
+            stored_password.startswith("scrypt:")
+            or stored_password.startswith("pbkdf2:")
+        )
+
+        if is_hashed:
+            # Verify a previously hashed password
+            password_valid = check_password_hash(
+                stored_password,
+                password
+            )
+
+        else:
+            # TEMPORARY compatibility for existing plaintext passwords
+            password_valid = (stored_password == password)
+
+            if password_valid:
+                # Upgrade the old password to a secure hash
+                new_hash = generate_password_hash(password)
+
+                conn.execute("""
+                    UPDATE newuser
+                    SET password = %s
+                    WHERE user_id = %s
+                    """, (new_hash, user["user_id"]))
+
+        if not password_valid:
+            return "Invalid username or password", 401
 
         user_id = user["user_id"]
         role = user["role"]
+
+        # Clear any old session before logging in
+        session.clear()
 
         session["user_id"] = user_id
         session["role"] = role
@@ -66,15 +107,21 @@ def login():
             if voter_profile:
                 return redirect(url_for("voter_dashboard"))
 
-            return render_template("voter.html", username=username)
+            return render_template(
+                "voter.html",
+                username=username
+            )
 
         if role == "admin":
-            return render_template("manager.html", username=username)
+            return render_template(
+                "manager.html",
+                username=username
+            )
 
         if role == "candidate":
             return redirect(url_for("candidate"))
 
-        return "invalid role"
+        return "Invalid role", 400
 
 
 # Voter profile
@@ -93,12 +140,19 @@ def voter():
             INSERT INTO voters
                 (user_id, phone, adress, city, state, country)
             VALUES (%s, %s, %s, %s, %s, %s)
-            """, (user_id, phone, address, city, state, country))
+            """, (
+                user_id,
+                phone,
+                address,
+                city,
+                state,
+                country
+            ))
 
     return render_template(
         "status.html",
         title="Profile Updated",
-        message="your voter profile has been saved successfully.",
+        message="Your voter profile has been saved successfully.",
         link_url=url_for("voter_dashboard"),
         link_text="Go to Dashboard"
     )
@@ -115,11 +169,21 @@ def admin():
     result_date = request.form.get("result_date", "")
     option = request.form["option"]
 
-    start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
-    end_date = datetime.strptime(end_date, "%Y-%m-%dT%H:%M")
+    start_date = datetime.strptime(
+        start_date,
+        "%Y-%m-%dT%H:%M"
+    )
+
+    end_date = datetime.strptime(
+        end_date,
+        "%Y-%m-%dT%H:%M"
+    )
 
     if result_date:
-        result_date = datetime.strptime(result_date, "%Y-%m-%dT%H:%M")
+        result_date = datetime.strptime(
+            result_date,
+            "%Y-%m-%dT%H:%M"
+        )
     else:
         result_date = None
 
@@ -138,9 +202,16 @@ def admin():
                 (title, start_date, end_date, des, elg,
                  result_date, status, election_type)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (title, start_date, end_date, des, elg,
-             result_date, status, option))
+            """, (
+                title,
+                start_date,
+                end_date,
+                des,
+                elg,
+                result_date,
+                status,
+                option
+            ))
 
     return render_template(
         "status.html",
@@ -167,6 +238,9 @@ def data():
     password = request.form["password"]
     role = request.form["option"]
 
+    # Hash the password before storing it
+    hashed_password = generate_password_hash(password)
+
     with get_db() as conn:
         existing_user = conn.execute("""
             SELECT user_id
@@ -184,7 +258,14 @@ def data():
             INSERT INTO newuser
                 (first_name, last_name, username, email, password, role)
             VALUES (%s, %s, %s, %s, %s, %s)
-            """, (first_name, last_name, username, email, password, role))
+            """, (
+                first_name,
+                last_name,
+                username,
+                email,
+                hashed_password,
+                role
+            ))
 
     return render_template(
         "status.html",
@@ -199,6 +280,7 @@ def data():
 @app.route("/candidate", methods=["GET", "POST"])
 def candidate():
     with get_db() as conn:
+
         if request.method == "GET":
             elections = conn.execute("""
                 SELECT election_id, title
@@ -206,7 +288,10 @@ def candidate():
                 ORDER BY election_id DESC
                 """).fetchall()
 
-            return render_template("candidate.html", elections=elections)
+            return render_template(
+                "candidate.html",
+                elections=elections
+            )
 
         election_id = request.form["election_id"]
         name = request.form["name"]
@@ -217,14 +302,19 @@ def candidate():
             INSERT INTO candidate
                 (election_id, name, party, manifesto)
             VALUES (%s, %s, %s, %s)
-            """, (election_id, name, party, manifesto))
+            """, (
+                election_id,
+                name,
+                party,
+                manifesto
+            ))
 
     return render_template(
         "status.html",
         title="Candidate added",
         message="The candidate has been added successfully.",
         link_url=url_for("candidate"),
-        link_text="add another candidate"
+        link_text="Add another candidate"
     )
 
 
@@ -238,7 +328,10 @@ def voter_dashboard():
             WHERE status = 'ongoing'
             """).fetchall()
 
-    return render_template("voter_dashboard.html", elections=elections)
+    return render_template(
+        "voter_dashboard.html",
+        elections=elections
+    )
 
 
 # View election
