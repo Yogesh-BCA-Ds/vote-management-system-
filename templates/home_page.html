@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An election management project for organizing voter access, candidate registration, and election information.">
+  <title>VoteSphere — Election Management</title>
+
+  <style>
+    :root{color-scheme:light;--bg:#f7f9fc;--card:#fff;--text:#18243a;--muted:#64748b;--line:#e3e8f0;--accent:#2563eb;--soft:#eaf1ff;--shadow:0 18px 55px #1725540c}
+    [data-theme="dark"]{color-scheme:dark;--bg:#0d1423;--card:#151f31;--text:#edf3ff;--muted:#a5b2c8;--line:#29364b;--accent:#7da7ff;--soft:#1d2c48;--shadow:0 18px 55px #0003}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;transition:background .2s,color .2s}
+    a{color:inherit;text-decoration:none}
+    .wrap{width:min(1080px,90%);margin:auto}
+    header{border-bottom:1px solid var(--line);background:var(--card)}
+    nav{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+    .brand{font-size:1.12rem;font-weight:800;letter-spacing:-.5px;white-space:nowrap}
+    .brand span{color:var(--accent)}
+    .nav-right{display:flex;align-items:center;gap:18px}
+    .developer{font-size:.82rem;color:var(--muted)}
+    .developer b{color:var(--text)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 17px;border:1px solid var(--line);border-radius:10px;font-weight:650;font-size:.92rem;cursor:pointer;background:var(--card);color:var(--text)}
+    .primary{background:var(--accent);border-color:var(--accent);color:white}
+    .theme{font-size:1.1rem;padding:9px 12px}
+    main{padding:64px 0 72px}
+    .hero{display:grid;grid-template-columns:1.25fr .75fr;align-items:center;gap:55px}
+    .eyebrow{display:inline-block;background:var(--soft);color:var(--accent);padding:6px 12px;border-radius:30px;font-size:.8rem;font-weight:750}
+    h1{font-size:clamp(2.5rem,6vw,4.3rem);line-height:1.08;letter-spacing:-2.5px;margin:20px 0}
+    h1 span{color:var(--accent)}
+    .intro{font-size:1.08rem;color:var(--muted);max-width:590px}
+    .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:27px}
+    .note{font-size:.83rem;color:var(--muted);margin-top:20px}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:var(--shadow)}
+    .panel h2{margin:0 0 7px;font-size:1.25rem}
+    .panel>p{color:var(--muted);font-size:.92rem;margin-top:0}
+    .feature{display:flex;gap:13px;padding:16px 0;border-top:1px solid var(--line)}
+    .feature-icon{width:42px;height:42px;flex-shrink:0;display:grid;place-items:center;border-radius:12px;background:var(--soft);font-size:1.25rem}
+    .feature strong{display:block}
+    .feature small{color:var(--muted);font-size:.87rem}
+    .about{margin-top:64px;padding:28px 0 0;border-top:1px solid var(--line)}
+    .about h2{font-size:1.6rem;margin-bottom:8px}
+    .about p{color:var(--muted);max-width:760px;margin:0}
+    footer{border-top:1px solid var(--line);background:var(--card);padding:24px 0}
+    .foot{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+    footer p{margin:0;color:var(--muted);font-size:.88rem}
+    footer a{color:var(--accent)}
+    .btn:hover{filter:brightness(.96)}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+    @media(max-width:720px){nav{padding:15px 0;align-items:flex-start}.nav-right{gap:9px;flex-wrap:wrap;justify-content:flex-end}.developer{display:none}main{padding:42px 0 52px}.hero{grid-template-columns:1fr;gap:32px}h1{letter-spacing:-1.5px}.about{margin-top:42px}}
+    @media(max-width:390px){.brand{font-size:1rem}.btn{padding:9px 11px}.nav-right{gap:6px}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap">
+      <a class="brand" href="{{ url_for('home_page') }}">🗳️ Vote<span>Sphere</span></a>
+      <div class="nav-right">
+        <span class="developer">Developed by <b>@WanoCoder</b></span>
+        <button class="btn theme" id="themeToggle" type="button"
+                aria-label="Switch colour theme" title="Switch theme">☾</button>
+        <a class="btn" href="{{ url_for('login') }}">Login</a>
+        <a class="btn primary" href="{{ url_for('register_page') }}">Sign up</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">ELECTION MANAGEMENT PROJECT</span>
+        <h1>A clearer way to manage <span>elections.</span></h1>
+        <p class="intro">
+          VoteSphere is a web-based election management project designed
+          to organize voter registration, candidate information, and
+          election administration through a simple, accessible interface.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="{{ url_for('register_page') }}">Get started &rarr;</a>
+          <a class="btn" href="{{ url_for('login') }}">Already registered? Login</a>
+        </div>
+        <p class="note">A student project focused on clear workflows and responsible access.</p>
+      </div>
+
+      <aside class="panel">
+        <h2>Everything starts with clarity.</h2>
+        <p>A straightforward experience for the people involved in an election.</p>
+        <div class="feature">
+          <div class="feature-icon">👤</div>
+          <div><strong>Account registration</strong><small>Submit an application to join the platform.</small></div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📋</div>
+          <div><strong>Candidate information</strong><small>Keep candidate details organized by election.</small></div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚙️</div>
+          <div><strong>Election administration</strong><small>Manage election details and application approvals.</small></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="about">
+      <h2>About the platform</h2>
+      <p>
+        Built with Python, Flask, HTML, and CSS, this project explores how
+        a web application can bring registration, election information,
+        and administrative tasks into one place. It is an educational
+        project, not a certified platform for official public elections.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <p>© <span id="year"></span> VoteSphere · Developed by @WanoCoder</p>
+      <p>Questions or feedback? <a href="mailto:Yogeshwanocoder@gmail.com">Yogeshwanocoder@gmail.com</a></p>
+    </div>
+  </footer>
+
+  <script>
+    const root = document.documentElement;
+    const toggle = document.getElementById("themeToggle");
+    const saved = localStorage.getItem("votesphere-theme");
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    function setTheme(theme) {
+      root.dataset.theme = theme;
+      toggle.textContent = theme === "dark" ? "☀" : "☾";
+      toggle.title = theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
+      toggle.setAttribute("aria-label", toggle.title);
+      localStorage.setItem("votesphere-theme", theme);
+    }
+
+    setTheme(saved || (systemDark ? "dark" : "light"));
+    toggle.addEventListener("click", () =>
+      setTheme(root.dataset.theme === "dark" ? "light" : "dark")
+    );
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
+
+        

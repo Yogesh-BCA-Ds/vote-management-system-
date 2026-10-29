@@ -35,10 +35,13 @@ def create_owner():
     
 @app.route("/")
 def home_page():
-    return render_template("index.html")
+    return render_template("home_page.html")
 
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["POST","GET"])
 def login():
+    if request.method == "GET":
+        return render_template("index.html")
+        
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "")
 
