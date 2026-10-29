@@ -162,6 +162,7 @@ def manager():
     return render_template("manager.html", username=user["username"])
             
 @app.route("/voter",methods=["POST"])
+@approved_required("voter")
 def voter():
     user_id = session['user_id']
     phone = request.form["phone"]
@@ -181,6 +182,7 @@ def voter():
                             link_text="Go to Dashboard")
 
 @app.route("/admin",methods=['POST'])
+@owner_required
 def admin():
     conn = sqlite3.connect("database/vote_man.db")
     title = request.form['title']
@@ -288,6 +290,7 @@ def data():
         link_text="Return to sign in"
     )
 @app.route("/candidate", methods=["GET", "POST"])
+@approved_required("candidate")
 def candidate():
     conn = sqlite3.connect("database/vote_man.db")
     conn.row_factory = sqlite3.Row
@@ -417,6 +420,7 @@ def voter_dashboard():
     )
     
 @app.route("/view_election", methods=["POST"])
+@approved_required("voter")
 def view_election():
 
     election_id = request.form["election_id"]
