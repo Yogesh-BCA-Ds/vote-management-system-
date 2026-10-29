@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Applications | CivicVote Portal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: system-ui, sans-serif;
+            background: #0b1120;
+            color: #f8fafc;
+        }
+        main { max-width: 1000px; margin: auto; }
+        .panel {
+            background: #111827;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 22px;
+            margin: 18px 0;
+            overflow-wrap: anywhere;
+        }
+        p, .muted { color: #aab6cc; }
+        .status { color: #c7d2fe; font-weight: 700; }
+        button, .button {
+            display: inline-block;
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin: 4px 5px 4px 0;
+            background: #6366f1;
+            color: white;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .reject { background: #991b1b; }
+        .back { background: #253149; }
+        form { display: inline-block; }
+        @media (max-width: 600px) {
+            body { padding: 14px; }
+            .panel { padding: 16px; }
+            form, form button { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Account applications</h1>
+    <p>Only the designated owner can approve or reject voter and candidate registrations.</p>
+    <a class="button back" href="{{ url_for('manager') }}">Back to owner dashboard</a>{% if applications %}
+    {% for application in applications %}
+        <section class="panel">
+            <h2>{{ application["first_name"] }} {{ application["last_name"] }}</h2>
+            <p><strong>Username:</strong> {{ application["username"] }}</p>
+            <p><strong>Email:</strong> {{ application["email"] }}</p>
+            <p><strong>Role:</strong> {{ application["role"]|title }}</p>
+            <p><strong>Joined:</strong> {{ application["date_joined"] }}</p>
+            <p>Status: <span class="status">{{ application["application_status"]|title }}</span></p>
+
+            {% if application["application_status"] == "pending" %}
+                <form method="POST" action="{{ url_for('review_application', user_id=application['user_id']) }}">
+                    <input type="hidden" name="action" value="approve">
+                    <button type="submit">Approve</button>
+                </form>
+                <form method="POST" action="{{ url_for('review_application', user_id=application['user_id']) }}">
+                    <input type="hidden" name="action" value="reject">
+                    <button class="reject" type="submit">Reject</button>
+                </form>
+            {% endif %}
+        </section>
+    {% endfor %}
+{% else %}
+    <section class="panel">
+        <h2>No applications yet</h2>
+        <p>New voter and candidate registrations will appear here.</p>
+    </section>
+{% endif %}
+
+</main>
+</body>
+</html>

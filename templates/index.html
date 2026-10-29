@@ -108,6 +108,15 @@ input[type="radio"] { accent-color: var(--primary); }
 .empty-state p { margin-bottom: 0; }
 .divider { height: 1px; background: var(--border); margin: 22px 0; }
 .muted-small { font-size: 12px; color: #8491a8; }
+.notice {
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(248, 113, 113, .3);
+    background: rgba(127, 29, 29, .2);
+    color: #fecaca;
+    font-size: 14px;
+}
 @media (max-width: 600px) {
     .nav-wrap { width: calc(100% - 28px); min-height: 66px; }
     .brand-name { font-size: 15px; }
@@ -144,6 +153,12 @@ input[type="radio"] { accent-color: var(--primary); }
             <h2>Sign in to continue</h2>
             <p>Enter your account details to open your portal.</p>
         </div>
+        {% if error %}
+            <div class="notice" role="alert">
+                {{ error }}
+            </div>
+        {% endif %}
+        
         <form action="{{ url_for('login') }}" method="POST">
             <div class="field">
                 <label for="username">Username</label>

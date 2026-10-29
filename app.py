@@ -1,87 +1,166 @@
 from flask import *
 from datetime import datetime
+from getpass import getpass
+from backend.owner_setup import create_initail_owner
+from backend.auth import approved_required, owner_required
+import os
 import sqlite3
+import re
+import click
 
-app = Flask("__name__")
-app.secret_key = "8k4kYOYOYOYO"
+from werkzeug.security import generate_password_hash,check_password_hash
+from dotenv import load_dotenv 
 
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+if not app.secret_key:
+    raise RuntimeError("set the FLASK_SECRET_KEY environment variable before starting the app")
+
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"database","vote_man.db")
+
+def get_db():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+approved_required = approved_required(get_db)
+owner_required = owner_required(get_db)
+
+@app.cli.command("create-owner")
+def create_owner():
+    create_initial_owner(get_db)
+    
 @app.route("/")
 def home_page():
     return render_template("index.html")
 
 @app.route("/login", methods=["POST"])
 def login():
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
 
-    print("login route called")
+    conn = get_db()
 
-    username = request.form["username"]
-    password = request.form["password"]
+    try:
+        user = conn.execute("""
+            SELECT user_id, username, password, role,
+                   is_verified, application_status, is_owner
+            FROM newuser
+            WHERE username = ?
+        """, (username,)).fetchone()
 
-    conn = sqlite3.connect("database/vote_man.db")
+        if not user:
+            return render_template(
+                "index.html",
+                error="Invalid username or password."
+            ), 401
 
-    user = conn.execute(
-        """
-        SELECT user_id, ROLE
-        FROM newuser
-        WHERE username=? AND password=?
-        """,
-        (username, password)
-    ).fetchone()
+        stored_password = user["password"]
 
-    if not user:
-        conn.close()
-        return "invalid username or password"
+        # Support old plaintext passwords during transition.
+        # New passwords must always be hashed.
+        try:
+            password_matches = check_password_hash(
+                stored_password, password
+            )
+        except (ValueError, TypeError):
+            password_matches = False
 
-    user_id = user[0]
-    role = user[1]
+        if not password_matches and stored_password == password:
+            password_matches = True
+            conn.execute("""
+                UPDATE newuser
+                SET password = ?
+                WHERE user_id = ?
+            """, (
+                generate_password_hash(password),
+                user["user_id"]
+            ))
+            conn.commit()
 
-    session["user_id"] = user_id
-    session["role"] = role
+        if not password_matches:
+            return render_template(
+                "index.html",
+                error="Invalid username or password."
+            ), 401
 
-    conn.execute(
-        """
-        UPDATE newuser
-        SET last_login=CURRENT_TIMESTAMP
-        WHERE user_id=?
-        """,
-        (user_id,)
-    )
-    conn.commit()
+        # Only the designated owner may use the admin account.
+        if user["role"] == "admin" and user["is_owner"] != 1:
+            return render_template(
+                "index.html",
+                error="This admin account is not the designated owner."
+            ), 403
 
-    if role == "voter":
+        if user["application_status"] == "rejected":
+            return render_template(
+                "index.html",
+                error="Your application was rejected. Please contact the owner."
+            ), 403
+	if (user["application_status"] != "approved" or user["is_verified"] != 1):
+	    return render_template("index.html",error = "your application is pending approval. please try again later"),403
+        session.clear()
+        session["user_id"] = user["user_id"]
+        session["role"] = user["role"]
 
-        voter_profile = conn.execute(
-            """
-            SELECT profile_id
-            FROM voters
-            WHERE user_id=?
-            """,
-            (user_id,)
-        ).fetchone()
+        conn.execute("""
+            UPDATE newuser
+            SET last_login = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        """, (user["user_id"],))
+        conn.commit()
 
-        conn.close()
+        if user["role"] == "voter":
+            profile = conn.execute("""
+                SELECT profile_id, is_active
+                FROM voters
+                WHERE user_id = ?
+            """, (user["user_id"],)).fetchone()
 
-        if voter_profile:
+            if not profile:
+                return render_template(
+                    "voter.html",
+                    username=user["username"]
+                )
+
+            if profile["is_active"] != 1:
+                session.clear()
+                return render_template(
+                    "index.html",
+                    error="Your voter profile is inactive. Contact the owner."
+                ), 403
+
             return redirect(url_for("voter_dashboard"))
 
+        if user["role"] == "admin":
+            return redirect(url_for("manager"))
+
+        if user["role"] == "candidate":
+            return redirect(url_for("candidate"))
+
+        session.clear()
         return render_template(
-            "voter.html",
-            username=username
-        )
+            "index.html",
+            error="This account has an invalid role."
+        ), 403
 
-    conn.close()
+    finally:
+        conn.close()
 
-    if role == "admin":
-        return render_template(
-            "manager.html",
-            username=username
-        )
+@app.route("/manager")
+@owner_required
+def manager():
+    conn = get_db()
+    try:
+        user = conn.execute("""
+            SELECT username FROM newuser
+            WHERE user_id = ?
+        """, (session["user_id"],)).fetchone()
+    finally:
+        conn.close()
 
-    if role == "candidate":
-        return redirect(url_for("candidate"))
-
-    return "invalid role"
-
+    return render_template("manager.html", username=user["username"])
+            
 @app.route("/voter",methods=["POST"])
 def voter():
     user_id = session['user_id']
@@ -135,39 +214,79 @@ def admin():
 def register_page():
     return render_template("register.html")
 
-@app.route("/register/data",methods=["POST"])
+@app.route("/register/data", methods=["POST"])
 def data():
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.row_factory = sqlite3.Row
-    first_name = request.form["first name"]
-    last_name = request.form["last name"]
-    username = request.form["username"]
-    email = request.form["email"]
-    password = request.form["password"]
-    role = request.form["option"]
-    # Check whether username already exists
-    existing_user = conn.execute(
-        "SELECT user_id FROM newuser WHERE username = ?",
-        (username,)
-    ).fetchone()
+    first_name = request.form.get("first name", "").strip()
+    last_name = request.form.get("last name", "").strip()
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    role = request.form.get("option", "").strip().lower()
 
-    if existing_user:
-        conn.close()
+    if role not in ("voter", "candidate"):
         return render_template(
             "register.html",
-            error="Username already exists. Please choose another."
-        )
-    conn.execute("""insert into newuser ("first_name","last_name","username","email","password","ROLE")values (?,?,?,?,?,?)""",
-              (first_name,last_name,username,email,password,role)) 
-    conn.commit()
-    voter  = conn.execute("select * from newuser").fetchall()
-    conn.close()
-    return render_template("status.html",
-                           title="Registration Successful",
-                           message="Your account has been created successfully. You can now sign in.",
-                           link_url=url_for("home_page"),
-                           link_text="Sign In")
+            error="You can register only as a voter or candidate."
+        ), 400
 
+    if not all([first_name, last_name, username, email, password]):
+        return render_template(
+            "register.html",
+            error="Please complete all required fields."
+        ), 400
+
+    if len(password) < 8:
+        return render_template(
+            "register.html",
+            error="Password must be at least 8 characters."
+        ), 400
+
+    conn = get_db()
+
+    try:
+        existing = conn.execute("""
+            SELECT user_id
+            FROM newuser
+            WHERE username = ? OR email = ?
+        """, (username, email)).fetchone()
+
+        if existing:
+            return render_template(
+                "register.html",
+                error="That username or email is already registered."
+            ), 400
+
+        conn.execute("""
+            INSERT INTO newuser (
+                first_name, last_name, username,
+                email, password, role,
+                is_verified, application_status, is_owner
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 0, 'pending', 0)
+        """, (
+            first_name,
+            last_name,
+            username,
+            email,
+            generate_password_hash(password),
+            role
+        ))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return render_template(
+        "status.html",
+        title="Application Submitted",
+        message=(
+            "Your account application has been submitted. "
+            "You can sign in after the owner approves it."
+        ),
+        link_url=url_for("home_page"),
+        link_text="Return to sign in"
+    )
 @app.route("/candidate", methods=["GET", "POST"])
 def candidate():
     conn = sqlite3.connect("database/vote_man.db")
@@ -193,6 +312,61 @@ def candidate():
     party = request.form["party"]
     manifesto = request.form["manifesto"]
 
+    
+    # Remove unnecessary whitespace
+    name = name.strip()
+    party = party.strip()
+    manifesto = manifesto.strip()
+
+    # 1. Validate required fields
+    if not election_id.strip() or not name:
+        conn.close()
+        return render_template("candidate.html",
+        elections=elections,
+        error="Election and candidate name are required."), 400
+
+    # 2. Validate candidate name
+    if len(name) < 2 or len(name) > 80:
+        conn.close()
+        return render_template("candidate.html",
+        elections=elections,
+        error = "Candidate name must be 2–80 characters."), 400
+
+    if not re.fullmatch(r"[^\W\d_][\w\s.'’-]*", name, re.UNICODE):
+        conn.close()
+        return render_template("candidate.html",
+        elections=elections,
+        error="Candidate name contains invalid characters."), 400
+
+    # 3. Validate party/group (optional)
+    if len(party) > 80:
+        conn.close()
+        return render_template("candidate.html",
+        elections=elections,
+        error="Party/group cannot exceed 80 characters."), 400
+
+    if party and not re.fullmatch(r"[\w\s&.,'’()/-]+", party, re.UNICODE):
+        conn.close()
+        return render_template("candidate.html",
+        elections=elections,
+        error="Party/group contains invalid characters."), 400
+
+    # 4. Validate manifesto (optional)
+    if len(manifesto) > 1000:
+        conn.close()
+        return render_template("candidate.html",
+        elections=elections,
+        error="Manifesto cannot exceed 1000 characters."), 400
+
+    election = conn.execute(
+    "SELECT election_id FROM election WHERE election_id = ?",(election_id,)).fetchone()
+
+    if election is None:
+        conn.close()
+        
+        return render_template("candidate.html",
+        elections=elections,
+        error="Selected election does not exist."), 400
     conn.execute("""
         INSERT INTO candidate
         (election_id, name, party, manifesto)
@@ -214,23 +388,34 @@ def candidate():
                            link_text = "add another candidate")
 
 @app.route("/voter/dashboard")
+@approved_required("voter")
 def voter_dashboard():
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.row_factory = sqlite3.Row
+    conn = get_db()
 
-    elections = conn.execute("""
-        SELECT *
-        FROM election
-        WHERE status = 'ongoing'
-    """).fetchall()
+    try:
+        profile = conn.execute("""
+            SELECT is_active
+            FROM voters
+            WHERE user_id = ?
+        """, (session["user_id"],)).fetchone()
 
-    conn.close()
+        if not profile or profile["is_active"] != 1:
+            abort(403, description="An active voter profile is required.")
+
+        elections = conn.execute("""
+            SELECT *
+            FROM election
+            WHERE status = 'ongoing'
+        """).fetchall()
+
+    finally:
+        conn.close()
 
     return render_template(
         "voter_dashboard.html",
         elections=elections
     )
-
+    
 @app.route("/view_election", methods=["POST"])
 def view_election():
 
@@ -258,6 +443,92 @@ def view_election():
         election=election,
         candidates=candidates
     )
+
+@app.route("/owner/applications")
+@owner_required
+def applications():
+    conn = get_db()
+
+    try:
+        rows = conn.execute("""
+            SELECT user_id, first_name, last_name, username,
+                   email, role, date_joined, application_status
+            FROM newuser
+            WHERE role IN ('voter', 'candidate')
+            ORDER BY
+                CASE application_status
+                    WHEN 'pending' THEN 0
+                    WHEN 'approved' THEN 1
+                    ELSE 2
+                END,
+                date_joined DESC
+        """).fetchall()
+    finally:
+        conn.close()
+
+    return render_template("applications.html", applications=rows)
+
+
+@app.route("/owner/applications/<int:user_id>/review", methods=["POST"])
+@owner_required
+def review_application(user_id):
+    action = request.form.get("action", "").strip().lower()
+
+    if action not in ("approve", "reject"):
+        abort(400, description="Invalid review action.")
+
+    conn = get_db()
+
+    try:
+        applicant = conn.execute("""
+            SELECT user_id, role, application_status
+            FROM newuser
+            WHERE user_id = ?
+              AND role IN ('voter', 'candidate')
+        """, (user_id,)).fetchone()
+
+        if not applicant:
+            abort(404, description="Application not found.")
+
+        if applicant["application_status"] != "pending":
+            abort(400, description="This application has already been reviewed.")
+
+        if action == "approve":
+            conn.execute("""
+                UPDATE newuser
+                SET application_status = 'approved',
+                    is_verified = 1
+                WHERE user_id = ?
+            """, (user_id,))
+
+            if applicant["role"] == "voter":
+                conn.execute("""
+                    UPDATE voters
+                    SET is_active = 1
+                    WHERE user_id = ?
+                """, (user_id,))
+
+        else:
+            conn.execute("""
+                UPDATE newuser
+                SET application_status = 'rejected',
+                    is_verified = 0
+                WHERE user_id = ?
+            """, (user_id,))
+
+            if applicant["role"] == "voter":
+                conn.execute("""
+                    UPDATE voters
+                    SET is_active = 0
+                    WHERE user_id = ?
+                """, (user_id,))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return redirect(url_for("applications"))
 
 if __name__ == '__main__':
     app.run(debug=True)

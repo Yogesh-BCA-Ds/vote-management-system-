@@ -144,6 +144,11 @@ input[type="radio"] { accent-color: var(--primary); }
             <h2>Create a new election</h2>
             <p>Fields marked as required must be completed before submitting.</p>
         </div>
+
+        <div style="margin: 20px 0;">
+            <a class="button" href="{{url_for('applications')}}">Review account applictaions </a>
+        </div>
+        
         <form action="{{ url_for('admin') }}" method="POST">
             <div class="field"><label for="title">Election title</label><input id="title" type="text" placeholder="Title of the election" name="title" required></div>
             <div class="field"><label for="des">Election description</label><textarea id="des" placeholder="Describe the purpose of this election" name="des" required></textarea></div>
