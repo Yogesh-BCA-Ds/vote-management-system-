@@ -40,7 +40,7 @@ def approved_required(get_db):
 
                 return view_function(*args, **kwargs)
             return wrapped
-        return decorator
+        return wrapper
     return decorator
     
 def owner_required(get_db):
