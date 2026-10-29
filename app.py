@@ -1,8 +1,9 @@
 from flask import *
 from datetime import datetime
 from getpass import getpass
-from backend.owner_setup import create_initail_owner
+from backend.owner_setup import create_initial_owner
 from backend.auth import approved_required, owner_required
+from dotenv import load_dotenv
 import os
 import sqlite3
 import re
@@ -12,8 +13,9 @@ from werkzeug.security import generate_password_hash,check_password_hash
 from dotenv import load_dotenv 
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY")
-if not app.secret_key:
+load_dotenv()
+app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
+if not app.config["SECRET_KEY"]:
     raise RuntimeError("set the FLASK_SECRET_KEY environment variable before starting the app")
 
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"database","vote_man.db")
@@ -97,12 +99,13 @@ def login():
                 "index.html",
                 error="Your application was rejected. Please contact the owner."
             ), 403
-	if (user["application_status"] != "approved" or user["is_verified"] != 1):
-	    return render_template("index.html",error = "your application is pending approval. please try again later"),403
+            
+        if (user["application_status"] != "approved" or user["is_verified"] != 1):
+            return render_template("index.html",error = "your application is pending approval. please try again later"),403
+
         session.clear()
         session["user_id"] = user["user_id"]
         session["role"] = user["role"]
-
         conn.execute("""
             UPDATE newuser
             SET last_login = CURRENT_TIMESTAMP
@@ -470,7 +473,7 @@ def applications():
     finally:
         conn.close()
 
-    return render_template("applications.html", applications=rows)
+    return render_template("application.html", applications=rows)
 
 
 @app.route("/owner/applications/<int:user_id>/review", methods=["POST"])
