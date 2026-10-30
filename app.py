@@ -1,5 +1,5 @@
 from flask import *
-from datetime import datetime
+from datetime import datetime,timedelta
 from getpass import getpass
 from backend.owner_setup import create_initial_owner
 from backend.auth import approved_required, owner_required
@@ -167,57 +167,335 @@ def manager():
 
     return render_template("manager.html", username=user["username"])
             
-@app.route("/voter",methods=["POST"])
+@app.route("/voter", methods=["POST"])
 @approved_required("voter")
 def voter():
-    user_id = session['user_id']
-    phone = request.form["phone"]
-    city = request.form["city"]
-    address = request.form["address"]
-    state = request.form["state"]
-    country = request.form["country"]
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.execute("""
-    INSERT INTO voters (user_id, phone, adress, city, state, country)
-    VALUES (?, ?, ?, ?, ?, ?)""", (user_id, phone, address, city, state, country))
-    conn.commit()
-    conn.close()
-    return render_template("status.html",title="Profile Updated",
-                            message="your voter profile has been saved successfully.",
-                            link_url=url_for("voter_dashboard"),
-                            link_text="Go to Dashboard")
 
-@app.route("/admin",methods=['POST'])
+    user_id = session["user_id"]
+
+    # Get form values safely
+    phone = request.form.get("phone", "").strip()
+    address = request.form.get("address", "").strip()
+    city = request.form.get("city", "").strip()
+    state = request.form.get("state", "").strip()
+    country = request.form.get("country", "").strip()
+
+    # Helper for displaying validation errors
+    def validation_error(message):
+        return render_template(
+            "voter.html",
+            username=session.get("username", "Voter"),
+            error=message
+        ), 400
+
+    # 1. Required field validation
+    if not all([phone, address, city, state, country]):
+        return validation_error("Please complete all required fields.")
+
+    # 2. Phone validation
+    phone_digits = re.sub(r"\D", "", phone)
+
+    if (
+        not re.fullmatch(r"\+?[0-9][0-9\s()-]*", phone)
+        or len(phone_digits) < 7
+        or len(phone_digits) > 15
+    ):
+        return validation_error(
+            "Enter a valid phone number containing 7 to 15 digits."
+        )
+
+    # 3. Address validation
+    if (
+        len(address) < 5
+        or len(address) > 200
+        or not any(char.isalnum() for char in address)
+    ):
+        return validation_error(
+            "Address must be between 5 and 200 characters."
+        )
+
+    # 4. City validation
+    if (
+        len(city) < 2
+        or len(city) > 80
+        or not city[0].isalpha()
+        or not all(
+            char.isalpha() or char in " .'-"
+            for char in city
+        )
+    ):
+        return validation_error("Please enter a valid city name.")
+
+    # 5. State validation
+    allowed_states = {
+        "Andhra Pradesh",
+        "Arunachal Pradesh",
+        "Assam",
+        "Bihar",
+        "Chhattisgarh",
+        "Goa",
+        "Gujarat",
+        "Haryana",
+        "Himachal Pradesh",
+        "Jharkhand",
+        "Karnataka",
+        "Kerala",
+        "Madhya Pradesh",
+        "Maharashtra",
+        "Manipur",
+        "Meghalaya",
+        "Mizoram",
+        "Nagaland",
+        "Odisha",
+        "Punjab",
+        "Rajasthan",
+        "Sikkim",
+        "Tamil Nadu",
+        "Telangana",
+        "Tripura",
+        "Uttar Pradesh",
+        "Uttarakhand",
+        "West Bengal"
+    }
+
+    if state not in allowed_states:
+        return validation_error("Please select a valid Indian state.")
+
+    # 6. Country validation
+    if (
+        len(country) < 2
+        or len(country) > 56
+        or not country[0].isalpha()
+        or not all(
+            char.isalpha() or char in " .'-"
+            for char in country
+        )
+    ):
+        return validation_error("Please enter a valid country name.")
+
+    # 7. Save voter profile
+    conn = sqlite3.connect("database/vote_man.db")
+
+    try:
+        conn.execute("""
+            INSERT INTO voters (
+                user_id,
+                phone,
+                adress,
+                city,
+                state,
+                country
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            phone,
+            address,
+            city,
+            state,
+            country
+        ))
+
+        conn.commit()
+
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        return validation_error(
+            "A voter profile may already exist for this account."
+        )
+
+    except sqlite3.Error:
+        conn.rollback()
+        return validation_error(
+            "Unable to save your profile due to a database error."
+        )
+
+    finally:
+        conn.close()
+
+    return render_template(
+        "status.html",
+        title="Profile Updated",
+        message="Your voter profile has been saved successfully.",
+        link_url=url_for("voter_dashboard"),
+        link_text="Go to Dashboard"
+    )
+    
+@app.route("/admin", methods=["POST"])
 @owner_required
 def admin():
-    conn = sqlite3.connect("database/vote_man.db")
-    title = request.form['title']
-    start_date = request.form['start_date']
-    end_date = request.form['end_date']
-    des = request.form['des']
-    elg = request.form['elg']
-    result_date = request.form['result_date']
-    start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
-    end_date = datetime.strptime(end_date, "%Y-%m-%dT%H:%M")
-    option = request.form['option']
-    now = datetime.now()
-    status = ""
+
+    # Get form values safely
+    title = request.form.get("title", "").strip()
+    des = request.form.get("des", "").strip()
+    start_date = request.form.get("start_date", "").strip()
+    end_date = request.form.get("end_date", "").strip()
+    result_date = request.form.get("result_date", "").strip()
+    option = request.form.get("option", "").strip().lower()
+    regions = request.form.getlist("elg")
+
+    # Helper to display backend validation errors
+    def validation_error(message):
+        return render_template(
+            "admin.html",
+            username=session.get("username", "Owner"),
+            error=message
+        ), 400
+
+    # 1. Required field validation
+    if not all([title, des, start_date, end_date, result_date, option]):
+        return validation_error("Please complete all required fields.")
+
+    if not regions:
+        return validation_error("Please select at least one eligible region.")
+
+    # 2. Title validation
+    if len(title) < 3 or len(title) > 120:
+        return validation_error(
+            "Election title must contain 3 to 120 characters."
+        )
+
+    # 3. Description validation
+    if len(des) < 10 or len(des) > 2000:
+        return validation_error(
+            "Description must contain 10 to 2000 characters."
+        )
+
+    # 4. Election type validation
+    allowed_types = ("local", "state", "national", "org")
+
+    if option not in allowed_types:
+        return validation_error("Please select a valid election type.")
+
+    # 5. Eligible region validation
+    allowed_regions = {
+        "all",
+        "andhra_pradesh",
+        "arunachal_pradesh",
+        "assam",
+        "bihar",
+        "chhattisgarh",
+        "goa",
+        "gujarat",
+        "haryana",
+        "himachal_pradesh",
+        "jharkhand",
+        "karnataka",
+        "kerala",
+        "madhya_pradesh",
+        "maharashtra",
+        "manipur",
+        "meghalaya",
+        "mizoram",
+        "nagaland",
+        "odisha",
+        "punjab",
+        "rajasthan",
+        "sikkim",
+        "tamil_nadu",
+        "telangana",
+        "tripura",
+        "uttar_pradesh",
+        "uttarakhand",
+        "west_bengal"
+    }
+
+    # Reject invalid or manipulated region values
+    if not set(regions).issubset(allowed_regions):
+        return validation_error("One or more selected regions are invalid.")
+
+    # All India must be selected alone
+    if "all" in regions and len(regions) > 1:
+        return validation_error(
+            "All India cannot be selected together with individual states."
+        )
+
+    # Store multiple selected regions in the existing text column
+    if "all" in regions:
+        elg = "all"
+    else:
+        elg = ",".join(regions)
+
+    # 6. Date validation
+    try:
+        start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
+        end_date = datetime.strptime(end_date, "%Y-%m-%dT%H:%M")
+        result_date = datetime.strptime(result_date, "%Y-%m-%dT%H:%M")
+
+    except ValueError:
+        return validation_error("Please enter valid election dates and times.")
+
+    # 7. Date order validation
+    if start_date >= end_date:
+        return validation_error(
+            "Election end date and time must be after the start date and time."
+        )
+
+    if result_date < end_date:
+        return validation_error(
+            "Result date and time cannot be before the election end date and time."
+        )
+
+    # 8. Calculate current time in India (IST, UTC+5:30)
+    # This avoids comparing Indian form dates with a UTC server clock.
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+
+    # 9. Determine election status
     if now < start_date:
         status = "upcoming"
-    elif now <= end_date:
+
+    elif now < end_date:
         status = "ongoing"
+
     else:
         status = "completed"
-    conn.execute("insert into election(title,start_date,end_date,des,elg,result_date,status,election_type) values (?,?,?,?,?,?,?,?)",
-                     (title,start_date,end_date,des,elg,result_date,status,option))
-    conn.commit()
-    conn.close()
-    return render_template("status.html",
-                            title = "Election Created",
-                            message = "The election has been created successfully",
-                            link_url = url_for("home_page"),
-                            link_text = "Return to home")
 
+    # 10. Insert election into database
+    conn = sqlite3.connect("database/vote_man.db")
+
+    try:
+        conn.execute("""
+            INSERT INTO election (
+                title,
+                start_date,
+                end_date,
+                des,
+                elg,
+                result_date,
+                status,
+                election_type
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            title,
+            start_date,
+            end_date,
+            des,
+            elg,
+            result_date,
+            status,
+            option
+        ))
+
+        conn.commit()
+
+    except sqlite3.Error:
+        conn.rollback()
+        return validation_error(
+            "The election could not be created because of a database error."
+        )
+
+    finally:
+        conn.close()
+
+    return render_template(
+        "status.html",
+        title="Election Created",
+        message="The election has been created successfully",
+        link_url=url_for("home_page"),
+        link_text="Return to home"
+    )
+    
 @app.route("/register")
 def register_page():
     return render_template("register.html")
@@ -243,10 +521,33 @@ def data():
             error="Please complete all required fields."
         ), 400
 
-    if len(password) < 8:
+    # Name validation
+    for name in (first_name, last_name):
+        if (len(name) > 50 or not all(char.isalpha() or char in " '-" for char in name)):
+            return render_template(
+            "register.html",
+            error="Please enter a valid name."
+        ), 400
+
+    # Username validation
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.]{2,29}", username):
+        return render_template(
+        "register.html",
+        error="Username must be 3–30 characters and contain only letters, numbers, dots or underscores."
+    ), 400
+
+    # Email validation
+    if (len(email) > 254or not re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+",
+        email)):
+        return render_template(
+        "register.html",
+        error="Please enter a valid email address."
+    ), 400
+    
+    if len(password) < 8 or len(password) > 128:
         return render_template(
             "register.html",
-            error="Password must be at least 8 characters."
+            error="Password must be between 8 and 128 characters."
         ), 400
 
     conn = get_db()
@@ -295,6 +596,7 @@ def data():
         link_url=url_for("home_page"),
         link_text="Return to sign in"
     )
+
 @app.route("/candidate", methods=["GET", "POST"])
 @approved_required("candidate")
 def candidate():
@@ -400,7 +702,18 @@ def candidate():
 @approved_required("voter")
 def voter_dashboard():
     conn = get_db()
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_text = now.strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute("""
+    UPDATE election
+    SET status = CASE
+        WHEN start_date > ? THEN 'upcoming'
+        WHEN end_date > ? THEN 'ongoing'
+        ELSE 'completed'
+    END
+    """, (now_text, now_text))
 
+    conn.commit()
     try:
         profile = conn.execute("""
             SELECT is_active

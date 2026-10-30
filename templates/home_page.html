@@ -47,6 +47,8 @@
     footer a{color:var(--accent)}
     .btn:hover{filter:brightness(.96)}
     a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+    .developer:hover { color:var(--accent); }
+    .developer:hover b { color:var(--accent); }
     @media(max-width:720px){nav{padding:15px 0;align-items:flex-start}.nav-right{gap:9px;flex-wrap:wrap;justify-content:flex-end}.developer{display:none}main{padding:42px 0 52px}.hero{grid-template-columns:1fr;gap:32px}h1{letter-spacing:-1.5px}.about{margin-top:42px}}
     @media(max-width:390px){.brand{font-size:1rem}.btn{padding:9px 11px}.nav-right{gap:6px}}
   </style>
@@ -56,7 +58,8 @@
     <nav class="wrap">
       <a class="brand" href="{{ url_for('home_page') }}">🗳️ Vote<span>Sphere</span></a>
       <div class="nav-right">
-        <span class="developer">Developed by <b>@WanoCoder</b></span>
+        <a class="developer" href="https://youtube.com/@wanocoder?si=_owoAC36_BVS1_Lf" target="_blank"
+         rel="noopener noreferrer">Developed by <b>@WanoCoder</b></a>
         <button class="btn theme" id="themeToggle" type="button"
                 aria-label="Switch colour theme" title="Switch theme">☾</button>
         <a class="btn" href="{{ url_for('login') }}">Login</a>

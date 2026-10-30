@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0b1120">
     <title>Create account | CivicVote Portal</title>
-    <style>
 
+    <style>
 :root {
     --bg: #0b1120;
     --surface: rgba(17, 24, 39, .88);
@@ -108,6 +109,7 @@ input[type="radio"] { accent-color: var(--primary); }
 .empty-state p { margin-bottom: 0; }
 .divider { height: 1px; background: var(--border); margin: 22px 0; }
 .muted-small { font-size: 12px; color: #8491a8; }
+
 @media (max-width: 600px) {
     .nav-wrap { width: calc(100% - 28px); min-height: 66px; }
     .brand-name { font-size: 15px; }
@@ -119,10 +121,9 @@ input[type="radio"] { accent-color: var(--primary); }
     .choice-list { display: grid; grid-template-columns: 1fr 1fr; }
     button, .button { width: 100%; }
 }
-
-
     </style>
 </head>
+
 <body>
 <header class="site-header">
     <div class="nav-wrap">
@@ -133,56 +134,163 @@ input[type="radio"] { accent-color: var(--primary); }
         <span class="nav-note">A clearer, simpler way to participate</span>
     </div>
 </header>
+
 <main>
     <section class="hero">
         <span class="eyebrow">Get started</span>
         <h1>Create your account</h1>
         <p>Register for CivicVote and choose the role that matches how you will use the platform.</p>
     </section>
+
     <section class="panel form-panel">
         <div class="form-intro">
             <h2>Account details</h2>
             <p>Complete the fields below. Your information will be used to set up your portal account.</p>
         </div>
+
         {% if error %}
             <div class="notice" role="alert">{{ error }}</div>
         {% endif %}
-        <form action="{{ url_for('data') }}" method="POST">
+
+        <!-- JavaScript validation message -->
+        <div id="validation-message" class="notice" role="alert" aria-live="polite" hidden></div>
+
+        <form id="register-form" action="{{ url_for('data') }}" method="POST" novalidate>
+
             <div class="field">
                 <label for="first-name">First name</label>
-                <input id="first-name" type="text" placeholder="Enter your first name" name="first name" autocomplete="given-name" required>
+                <input id="first-name" type="text" placeholder="Enter your first name"
+                       name="first name" autocomplete="given-name" required>
             </div>
+
             <div class="field">
                 <label for="last-name">Last name</label>
-                <input id="last-name" type="text" placeholder="Enter your last name" name="last name" autocomplete="family-name" required>
+                <input id="last-name" type="text" placeholder="Enter your last name"
+                       name="last name" autocomplete="family-name" required>
             </div>
+
             <div class="field">
                 <label for="reg-username">Username</label>
-                <input id="reg-username" type="text" placeholder="Choose a username" name="username" autocomplete="username" required>
+                <input id="reg-username" type="text" placeholder="Choose a username"
+                       name="username" autocomplete="username" required>
             </div>
+
             <div class="field">
                 <label for="email">Email address</label>
-                <input id="email" type="email" placeholder="you@example.com" name="email" autocomplete="email" required>
+                <input id="email" type="email" placeholder="you@example.com"
+                       name="email" autocomplete="email" required>
             </div>
+
             <div class="field">
                 <label for="reg-password">Password</label>
-                <input id="reg-password" type="password" placeholder="Create a password" name="password" autocomplete="new-password" required>
+                <input id="reg-password" type="password" placeholder="Create a password"
+                       name="password" autocomplete="new-password" required>
             </div>
+
             <div class="field">
                 <label>Choose your role</label>
                 <div class="choice-list">
-                    <div class="choice"><input id="role-voter" type="radio" name="option" value="voter" required><label for="role-voter">Voter</label></div>
-                    <div class="choice"><input id="role-candidate" type="radio" name="option" value="candidate"><label for="role-candidate">Candidate</label></div>
+                    <div class="choice">
+                        <input id="role-voter" type="radio" name="option" value="voter" required>
+                        <label for="role-voter">Voter</label>
+                    </div>
+                    <div class="choice">
+                        <input id="role-candidate" type="radio" name="option" value="candidate">
+                        <label for="role-candidate">Candidate</label>
+                    </div>
                 </div>
             </div>
+
             <button class="full" type="submit">Create account</button>
         </form>
-        <div class="form-links">Already registered? <a href="{{ url_for('home_page') }}">Sign in</a></div>
+
+        <div class="form-links">
+            Already registered? <a href="{{ url_for('home_page') }}">Sign in</a>
+        </div>
     </section>
 </main>
+
 <footer class="site-footer">
     <strong>CivicVote Portal</strong> · A voting management experience
     <div style="margin-top:4px">Designed to make election information easier to access and understand.</div>
 </footer>
+
+<script>
+    const form = document.getElementById("register-form");
+    const message = document.getElementById("validation-message");
+
+    function showError(text, field) {
+        message.textContent = text;
+        message.hidden = false;
+
+        if (field) {
+            field.focus();
+        }
+    }
+
+    function validName(value) {
+        return /^[\p{L}][\p{L} '-]*$/u.test(value);
+    }
+
+    form.addEventListener("submit", function(event) {
+        message.hidden = true;
+
+        const firstName = document.getElementById("first-name");
+        const lastName = document.getElementById("last-name");
+        const username = document.getElementById("reg-username");
+        const email = document.getElementById("email");
+        const password = document.getElementById("reg-password");
+        const role = document.querySelector('input[name="option"]:checked');
+
+        const first = firstName.value.trim();
+        const last = lastName.value.trim();
+        const user = username.value.trim();
+        const mail = email.value.trim();
+
+        if (!first || !last || !user || !mail || !password.value) {
+            event.preventDefault();
+            showError("Please complete all required fields.",
+                document.querySelector("#register-form input:invalid") || firstName);
+            return;
+        }
+
+        if (first.length > 50 || !validName(first)) {
+            event.preventDefault();
+            showError("Please enter a valid first name (maximum 50 characters).", firstName);
+            return;
+        }
+
+        if (last.length > 50 || !validName(last)) {
+            event.preventDefault();
+            showError("Please enter a valid last name (maximum 50 characters).", lastName);
+            return;
+        }
+
+        if (!/^[A-Za-z0-9][A-Za-z0-9_.]{2,29}$/.test(user)) {
+            event.preventDefault();
+            showError("Username must be 3–30 characters and use letters, numbers, dots or underscores.", username);
+            return;
+        }
+
+        if (mail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+            event.preventDefault();
+            showError("Please enter a valid email address.", email);
+            return;
+        }
+
+        if (password.value.length < 8 || password.value.length > 128) {
+            event.preventDefault();
+            showError("Password must be between 8 and 128 characters.", password);
+            return;
+        }
+
+        if (!role) {
+            event.preventDefault();
+            showError("Please select whether you want to register as a voter or candidate.");
+            return;
+        }
+    });
+</script>
+
 </body>
 </html>

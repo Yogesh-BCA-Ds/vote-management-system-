@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0b1120">
     <title>Admin workspace | CivicVote Portal</title>
-    <style>
 
+    <style>
 :root {
     --bg: #0b1120;
     --surface: rgba(17, 24, 39, .88);
@@ -108,6 +108,7 @@ input[type="radio"] { accent-color: var(--primary); }
 .empty-state p { margin-bottom: 0; }
 .divider { height: 1px; background: var(--border); margin: 22px 0; }
 .muted-small { font-size: 12px; color: #8491a8; }
+
 @media (max-width: 600px) {
     .nav-wrap { width: calc(100% - 28px); min-height: 66px; }
     .brand-name { font-size: 15px; }
@@ -119,10 +120,9 @@ input[type="radio"] { accent-color: var(--primary); }
     .choice-list { display: grid; grid-template-columns: 1fr 1fr; }
     button, .button { width: 100%; }
 }
-
-
     </style>
 </head>
+
 <body>
 <header class="site-header">
     <div class="nav-wrap">
@@ -133,53 +133,227 @@ input[type="radio"] { accent-color: var(--primary); }
         <span class="nav-note">A clearer, simpler way to participate</span>
     </div>
 </header>
+
 <main>
     <section class="hero">
         <span class="eyebrow">Administration workspace</span>
         <h1>Welcome, {{ username }}</h1>
         <p>Create and organise elections from one place. Add the key details so participants can understand the election, eligibility, and result schedule.</p>
     </section>
+
     <section class="panel form-panel">
         <div class="form-intro">
             <h2>Create a new election</h2>
             <p>Fields marked as required must be completed before submitting.</p>
         </div>
 
-        <div style="margin: 20px 0;">
-            <a class="button" href="{{url_for('applications')}}">Review account applictaions </a>
+        {% if error %}
+        <div class="notice" role="alert" aria-live="polite">
+            {{ error }}
         </div>
-        
-        <form action="{{ url_for('admin') }}" method="POST">
-            <div class="field"><label for="title">Election title</label><input id="title" type="text" placeholder="Title of the election" name="title" required></div>
-            <div class="field"><label for="des">Election description</label><textarea id="des" placeholder="Describe the purpose of this election" name="des" required></textarea></div>
-            <div class="field"><label for="start-date">Election start date</label><input id="start-date" type="datetime-local" name="start_date" required></div>
-            <div class="field"><label for="end-date">Election end date</label><input id="end-date" type="datetime-local" name="end_date" required></div>
+        {% endif %}
+
+        <div style="margin: 20px 0;">
+            <a class="button" href="{{ url_for('applications') }}">
+                Review account applications
+            </a>
+        </div>
+
+        <div id="client-error" class="notice" role="alert" aria-live="polite" hidden></div>
+        <form id="election-form" action="{{ url_for('admin') }}" method="POST" novalidate>
+
+            <div class="field">
+                <label for="title">Election title</label>
+                <input id="title" type="text" name="title"
+                       placeholder="Title of the election"
+                       minlength="3" maxlength="120" required>
+            </div>
+
+            <div class="field">
+                <label for="des">Election description</label>
+                <textarea id="des" name="des"
+                          placeholder="Describe the purpose of this election"
+                          minlength="10" maxlength="2000" required></textarea>
+            </div>
+
+            <div class="field">
+                <label for="start-date">Election start date</label>
+                <input id="start-date" type="datetime-local"
+                       name="start_date" required>
+            </div>
+
+            <div class="field">
+                <label for="end-date">Election end date</label>
+                <input id="end-date" type="datetime-local"
+                       name="end_date" required>
+            </div>
+
             <div class="field">
                 <label>Election type</label>
                 <div class="choice-list">
-                    <div class="choice"><input id="type-local" type="radio" value="local" name="option" required><label for="type-local">Local</label></div>
-                    <div class="choice"><input id="type-state" type="radio" value="state" name="option"><label for="type-state">State</label></div>
-                    <div class="choice"><input id="type-national" type="radio" value="national" name="option"><label for="type-national">National</label></div>
-                    <div class="choice"><input id="type-org" type="radio" value="org" name="option"><label for="type-org">Organisational</label></div>
+                    <div class="choice">
+                        <input id="type-local" type="radio" value="local" name="option" required>
+                        <label for="type-local">Local</label>
+                    </div>
+                    <div class="choice">
+                        <input id="type-state" type="radio" value="state" name="option">
+                        <label for="type-state">State</label>
+                    </div>
+                    <div class="choice">
+                        <input id="type-national" type="radio" value="national" name="option">
+                        <label for="type-national">National</label>
+                    </div>
+                    <div class="choice">
+                        <input id="type-org" type="radio" value="org" name="option">
+                        <label for="type-org">Organisational</label>
+                    </div>
                 </div>
             </div>
+
             <div class="field">
                 <label for="elg">Eligible regions</label>
-                <select id="elg" name="elg" required>
+                <select id="elg" name="elg" multiple size="7" required>
+                    <option value="all">All India (all states)</option>
+                    <option value="andhra_pradesh">Andhra Pradesh</option>
+                    <option value="arunachal_pradesh">Arunachal Pradesh</option>
+                    <option value="assam">Assam</option>
+                    <option value="bihar">Bihar</option>
+                    <option value="chhattisgarh">Chhattisgarh</option>
+                    <option value="goa">Goa</option>
+                    <option value="gujarat">Gujarat</option>
+                    <option value="haryana">Haryana</option>
+                    <option value="himachal_pradesh">Himachal Pradesh</option>
+                    <option value="jharkhand">Jharkhand</option>
                     <option value="karnataka">Karnataka</option>
+                    <option value="kerala">Kerala</option>
+                    <option value="madhya_pradesh">Madhya Pradesh</option>
                     <option value="maharashtra">Maharashtra</option>
+                    <option value="manipur">Manipur</option>
+                    <option value="meghalaya">Meghalaya</option>
+                    <option value="mizoram">Mizoram</option>
+                    <option value="nagaland">Nagaland</option>
+                    <option value="odisha">Odisha</option>
+                    <option value="punjab">Punjab</option>
+                    <option value="rajasthan">Rajasthan</option>
+                    <option value="sikkim">Sikkim</option>
                     <option value="tamil_nadu">Tamil Nadu</option>
-                    <option value="all">All</option>
+                    <option value="telangana">Telangana</option>
+                    <option value="tripura">Tripura</option>
+                    <option value="uttar_pradesh">Uttar Pradesh</option>
+                    <option value="uttarakhand">Uttarakhand</option>
+                    <option value="west_bengal">West Bengal</option>
                 </select>
+                <p class="muted-small">
+                    Select one or more states. On a computer, hold Ctrl (Windows/Linux)
+                    or Command (Mac) while selecting multiple states.
+                    Choose All India by itself for nationwide eligibility.
+                </p>
             </div>
-            <div class="field"><label for="result-date">Result date</label><input id="result-date" type="datetime-local" name="result_date" required></div>
-            <button class="full" type="submit">Create election <span aria-hidden="true">→</span></button>
+
+            <div class="field">
+                <label for="result-date">Result date</label>
+                <input id="result-date" type="datetime-local"
+                       name="result_date" required>
+            </div>
+
+            <button class="full" type="submit">
+                Create election <span aria-hidden="true">→</span>
+            </button>
         </form>
     </section>
 </main>
+
 <footer class="site-footer">
     <strong>CivicVote Portal</strong> · A voting management experience
-    <div style="margin-top:4px">Designed to make election information easier to access and understand.</div>
+    <div style="margin-top:4px">
+        Designed to make election information easier to access and understand.
+    </div>
 </footer>
+
+<script>
+const form = document.getElementById("election-form");
+const regionSelect = document.getElementById("elg");
+
+function showValidationError(message, field) {
+    const errorBox = document.getElementById("client-error");
+
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+    errorBox.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (field) field.focus();
+}
+
+regionSelect.addEventListener("change", function () {
+    const allOption = regionSelect.querySelector('option[value="all"]');
+    const selected = Array.from(regionSelect.selectedOptions);
+
+    if (selected.some(option => option.value === "all") && selected.length > 1) {
+        allOption.selected = false;
+        showValidationError(
+            "All India cannot be selected together with individual states. Choose All India or select specific states."
+        );
+    }
+});
+
+form.addEventListener("submit", function (event) {
+    const title = document.getElementById("title");
+    const description = document.getElementById("des");
+    const start = document.getElementById("start-date");
+    const end = document.getElementById("end-date");
+    const result = document.getElementById("result-date");
+    const selectedType = document.querySelector('input[name="option"]:checked');
+    const selectedRegions = Array.from(regionSelect.selectedOptions);
+
+    if (title.value.trim().length < 3 || title.value.trim().length > 120) {
+        event.preventDefault();
+        showValidationError("Election title must contain 3 to 120 characters.", title);
+        return;
+    }
+
+    if (description.value.trim().length < 10 || description.value.trim().length > 2000) {
+        event.preventDefault();
+        showValidationError("Description must contain 10 to 2000 characters.", description);
+        return;
+    }
+
+    if (!start.value || !end.value || !result.value) {
+        event.preventDefault();
+        showValidationError("Please enter all election dates.");
+        return;
+    }
+
+    if (new Date(start.value) >= new Date(end.value)) {
+        event.preventDefault();
+        showValidationError("Election end date and time must be after the start date and time.", end);
+        return;
+    }
+
+    if (new Date(result.value) < new Date(end.value)) {
+        event.preventDefault();
+        showValidationError("Result date and time cannot be before the election end date and time.", result);
+        return;
+    }
+
+    if (!selectedType) {
+        event.preventDefault();
+        showValidationError("Please select an election type.");
+        return;
+    }
+
+    if (selectedRegions.length === 0) {
+        event.preventDefault();
+        showValidationError("Please select at least one eligible state or All India.", regionSelect);
+        return;
+    }
+
+    if (selectedRegions.some(option => option.value === "all") && selectedRegions.length > 1) {
+        event.preventDefault();
+        showValidationError("Choose All India by itself, or select individual states.", regionSelect);
+        return;
+    }
+});
+</script>
+
 </body>
 </html>
