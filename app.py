@@ -21,7 +21,7 @@ if not app.config["SECRET_KEY"]:
     raise RuntimeError("set the FLASK_SECRET_KEY environment variable before starting the app")
 
 app.config.update(SESSION_COOKIE_HTTPONLY=True,
-                  SESSION_COOKIE_SECURE=(os.getenv("SESSION_COOKIE_SECURE","False").lower() == "true"),
+                  SESSION_COOKIE_SECURE=(os.getenv("SESSION_COOKIE_SECURE","True").lower() == "true"),
                   SESSION_COOKIE_SAMESITE="Lax",
                   PERMANENT_SESSION_LIFETIME=timedelta(minutes=30))
 csrf = CSRFProtect(app)
