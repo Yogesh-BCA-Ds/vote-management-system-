@@ -26,7 +26,7 @@
         .site-header { border-bottom:1px solid var(--border); background:rgba(8,13,27,.78); backdrop-filter:blur(14px); }
         .nav-wrap {
             width:min(1120px,calc(100% - 40px)); min-height:74px; margin:auto;
-            display:flex; align-items:center; justify-content:space-between; gap:18px;
+            display:flex; align-items:center; justify-content:space-between; gap:240px;
         }
         .brand { display:flex; align-items:center; gap:11px; text-decoration:none; font-weight:800; letter-spacing:-.03em; }
         .brand-mark {
@@ -124,6 +124,11 @@
             <span class="brand-name">CivicVote <span style="color:#a5b4fc">Portal</span></span>
         </a>
         <span class="nav-note">A clearer, simpler way to participate</span>
+        <form action="{{ url_for('logout') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"> logout </button>
+        </form>
+
     </div>
 </header>
 
@@ -147,6 +152,7 @@
         </div>
 
         <form id="candidate-form" action="{{ url_for('candidate') }}" method="POST" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="field">
                 <label for="election-id">Select election</label>
                 <select id="election-id" name="election_id" required

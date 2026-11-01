@@ -160,6 +160,7 @@ input[type="radio"] { accent-color: var(--primary); }
         {% endif %}
         
         <form action="{{ url_for('login') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="field">
                 <label for="username">Username</label>
                 <input id="username" type="text" placeholder="Enter your username" name="username" autocomplete="username" required>

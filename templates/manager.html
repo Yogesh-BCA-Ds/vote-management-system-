@@ -35,7 +35,7 @@ a { color: inherit; }
 }
 .nav-wrap {
     width: min(1120px, calc(100% - 40px)); min-height: 74px; margin: 0 auto;
-    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 240px;
 }
 .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; font-weight: 800; letter-spacing: -.03em; }
 .brand-mark {
@@ -131,7 +131,13 @@ input[type="radio"] { accent-color: var(--primary); }
             <span class="brand-name">CivicVote <span style="color:#a5b4fc">Portal</span></span>
         </a>
         <span class="nav-note">A clearer, simpler way to participate</span>
+        <form action="{{ url_for('logout') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"> logout </button>
+        </form>
+
     </div>
+        
 </header>
 
 <main>
@@ -161,7 +167,7 @@ input[type="radio"] { accent-color: var(--primary); }
 
         <div id="client-error" class="notice" role="alert" aria-live="polite" hidden></div>
         <form id="election-form" action="{{ url_for('admin') }}" method="POST" novalidate>
-
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="field">
                 <label for="title">Election title</label>
                 <input id="title" type="text" name="title"

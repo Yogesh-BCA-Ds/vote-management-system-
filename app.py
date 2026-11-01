@@ -4,6 +4,7 @@ from getpass import getpass
 from backend.owner_setup import create_initial_owner
 from backend.auth import approved_required, owner_required
 from dotenv import load_dotenv
+from flask_wtf.csrf import CSRFProtect
 import os
 import sqlite3
 import re
@@ -18,6 +19,11 @@ app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
 if not app.config["SECRET_KEY"]:
     raise RuntimeError("set the FLASK_SECRET_KEY environment variable before starting the app")
 
+app.config.update(SESSION_COOKIE_HTTPONLY=True,
+                  SESSION_COOKIE_SECURE=(os.getenv("SESSION_COOKIE_SECURE","False").lower() == "true"),
+                  SESSION_COOKIE_SAMESITE="Lax",
+                  PERMANENT_SESSION_LIFETIME=timedelta(minutes=30))
+csrf = CSRFProtect(app)
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"database","vote_man.db")
 
 def get_db():
@@ -107,6 +113,7 @@ def login():
             return render_template("index.html",error = "your application is pending approval. please try again later"),403
 
         session.clear()
+        session.permanent = True
         session["user_id"] = user["user_id"]
         session["role"] = user["role"]
         conn.execute("""
@@ -153,6 +160,14 @@ def login():
     finally:
         conn.close()
 
+@app.route("/logout", methods=["POST"])
+def logout():
+    if "user_id" not in session:
+        return redirect(url_for("home_page"))
+
+    session.clear()
+    return redirect(url_for("home_page"))
+    
 @app.route("/manager")
 @owner_required
 def manager():
@@ -537,7 +552,7 @@ def data():
     ), 400
 
     # Email validation
-    if (len(email) > 254or not re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+",
+    if (len(email) > 254 or not re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+",
         email)):
         return render_template(
         "register.html",
@@ -737,36 +752,52 @@ def voter_dashboard():
         "voter_dashboard.html",
         elections=elections
     )
-    
+
 @app.route("/view_election", methods=["POST"])
 @approved_required("voter")
 def view_election():
 
-    election_id = request.form["election_id"]
+    election_id = request.form.get("election_id")
 
-    conn = sqlite3.connect("database/vote_man.db")
-    conn.row_factory = sqlite3.Row
+    conn = get_db()
 
-    election = conn.execute("""
-        SELECT *
-        FROM election
-        WHERE election_id = ?
-    """, (election_id,)).fetchone()
+    try:
+        # Check whether the voter has an active profile
+        profile = conn.execute("""
+            SELECT is_active
+            FROM voters
+            WHERE user_id = ?
+        """, (session["user_id"],)).fetchone()
 
-    candidates = conn.execute("""
-        SELECT *
-        FROM candidate
-        WHERE election_id = ?
-    """, (election_id,)).fetchall()
+        if not profile or profile["is_active"] != 1:
+            abort(403, description="An active voter profile is required.")
 
-    conn.close()
+        # Fetch the selected election
+        election = conn.execute("""
+            SELECT *
+            FROM election
+            WHERE election_id = ?
+        """, (election_id,)).fetchone()
+
+        if not election:
+            abort(404, description="Election not found.")
+
+        # Fetch candidates for that election
+        candidates = conn.execute("""
+            SELECT *
+            FROM candidate
+            WHERE election_id = ?
+        """, (election_id,)).fetchall()
+
+    finally:
+        conn.close()
 
     return render_template(
         "view_election.html",
         election=election,
         candidates=candidates
     )
-
+    
 @app.route("/owner/applications")
 @owner_required
 def applications():

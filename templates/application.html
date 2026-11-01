@@ -60,10 +60,12 @@
 
             {% if application["application_status"] == "pending" %}
                 <form method="POST" action="{{ url_for('review_application', user_id=application['user_id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="approve">
                     <button type="submit">Approve</button>
                 </form>
                 <form method="POST" action="{{ url_for('review_application', user_id=application['user_id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="reject">
                     <button class="reject" type="submit">Reject</button>
                 </form>
