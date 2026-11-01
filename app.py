@@ -12,7 +12,7 @@ import re
 import click
 
 from werkzeug.security import generate_password_hash,check_password_hash
-from dotenv import load_dotenv 
+ 
 
 app = Flask(__name__)
 load_dotenv()
@@ -363,13 +363,13 @@ def voter():
 
         conn.commit()
 
-    except sqlite3.IntegrityError:
+    except psycopg2.IntegrityError:
         conn.rollback()
         return validation_error(
             "A voter profile may already exist for this account."
         )
 
-    except sqlite3.Error:
+    except psycopg2.Error:
         conn.rollback()
         return validation_error(
             "Unable to save your profile due to a database error."
@@ -544,7 +544,7 @@ def admin():
 
         conn.commit()
 
-    except sqlite3.Error:
+    except psycopg2.Error:
         conn.rollback()
         return validation_error(
             "The election could not be created because of a database error."
