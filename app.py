@@ -935,5 +935,5 @@ def review_application(user_id):
 if __name__ == '__main__':
     app.run(debug=False)
 
-F
+
 
