@@ -42,7 +42,7 @@ def create_initial_owner(get_db):
         duplicate = conn.execute("""
             SELECT user_id
             FROM newuser
-            WHERE username = ? OR email = ?
+            WHERE username = %s OR email = %s
         """, (username, email)).fetchone()
 
         if duplicate:
@@ -55,7 +55,7 @@ def create_initial_owner(get_db):
                 first_name, last_name, role,
                 is_verified, application_status, is_owner
             )
-            VALUES (?, ?, ?, ?, ?, 'admin', 1, 'approved', 1)
+            VALUES (%s, %s, %s, %s, %s, 'admin', TRUE, 'approved', 1)
         """, (
             username,
             generate_password_hash(password),
@@ -67,5 +67,9 @@ def create_initial_owner(get_db):
         conn.commit()
         click.echo("Owner account created successfully.")
 
+    except Exception:
+        conn.rollback()
+        raise
+         
     finally:
         conn.close()

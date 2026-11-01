@@ -1,7 +1,5 @@
 from functools import wraps
 from flask import session, abort
-
-
 def approved_required(get_db):
     def decorator(*allowed_roles):
         def wrapper(view_function):
@@ -18,7 +16,7 @@ def approved_required(get_db):
                         SELECT user_id, role, is_verified,
                                application_status, is_owner
                         FROM newuser
-                        WHERE user_id = ?
+                        WHERE user_id = %s
                     """, (user_id,)).fetchone()
                 finally:
                     conn.close()
@@ -28,7 +26,7 @@ def approved_required(get_db):
                     abort(401, description="Account not found.")
 
                 if (user["application_status"] != "approved"
-                        or user["is_verified"] != 1):
+                        or not user["is_verified"]):
                     session.clear()
                     abort(403, description="Your account is not approved.")
 
@@ -58,10 +56,10 @@ def owner_required(get_db):
                 owner = conn.execute("""
                     SELECT user_id
                     FROM newuser
-                    WHERE user_id = ?
+                    WHERE user_id = %s
                       AND role = 'admin'
                       AND is_owner = 1
-                      AND is_verified = 1
+                      AND is_verified = TRUE
                       AND application_status = 'approved'
                 """, (user_id,)).fetchone()
             finally:

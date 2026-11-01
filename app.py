@@ -6,7 +6,8 @@ from backend.auth import approved_required, owner_required
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 import os
-import sqlite3
+import psyconpg2
+from psycopg2.extras import RealDictCursor
 import re
 import click
 
@@ -24,14 +25,40 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True,
                   SESSION_COOKIE_SAMESITE="Lax",
                   PERMANENT_SESSION_LIFETIME=timedelta(minutes=30))
 csrf = CSRFProtect(app)
-DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"database","vote_man.db")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is missing")
+
+
+class DBConnection:
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def execute(self, query, params=None):
+        cursor = self.connection.cursor()
+        cursor.execute(query, params)
+        return cursor
+
+    def commit(self):
+        self.connection.commit()
+
+    def rollback(self):
+        self.connection.rollback()
+
+    def close(self):
+        self.connection.close()
+
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
+    connection = psycopg2.connect(
+        DATABASE_URL,
+        cursor_factory=RealDictCursor
+    )
+    return DBConnection(connection)
+    
 def refresh_election_status():
     now = datetime.utcnow() + timedelta(hours=5, minutes=30)
     now_text = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -490,7 +517,7 @@ def admin():
         status = "completed"
 
     # 10. Insert election into database
-    conn = sqlite3.connect("database/vote_man.db")
+    conn = get_db()
 
     try:
         conn.execute("""
@@ -639,7 +666,7 @@ def data():
 @app.route("/candidate", methods=["GET", "POST"])
 @approved_required("candidate")
 def candidate():
-    conn = sqlite3.connect("database/vote_man.db")
+    conn = get_db()
     conn.row_factory = sqlite3.Row
 
     if request.method == "GET":
