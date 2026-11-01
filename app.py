@@ -32,6 +32,30 @@ def get_db():
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
+def refresh_election_status():
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_text = now.strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_db()
+    try:
+        conn.execute("""
+            UPDATE election
+            SET status = CASE
+                WHEN status = 'cancelled' THEN 'cancelled'
+                WHEN start_date > ? THEN 'upcoming'
+                WHEN end_date > ? THEN 'ongoing'
+                ELSE 'completed'
+            END
+        """, (now_text, now_text))
+
+        conn.commit()
+    finally:
+        conn.close()
+
+@app.befor_request
+def update_election_status():
+    refresh_election_status()
+    
 approved_required = approved_required(get_db)
 owner_required = owner_required(get_db)
 
@@ -352,7 +376,7 @@ def admin():
     # Helper to display backend validation errors
     def validation_error(message):
         return render_template(
-            "admin.html",
+            "manager.html",
             username=session.get("username", "Owner"),
             error=message
         ), 400
