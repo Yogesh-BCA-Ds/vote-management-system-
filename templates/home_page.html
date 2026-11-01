@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="An election management project for organizing voter access, candidate registration, and election information.">
-  <title>VoteSphere — Election Management</title>
+  <title>CivicVote Portal | Educational Election Management Project</title>
   <meta name="google-site-verification" content="yXOB0tYj4gjPv3Smw1vCRbY6BF4AtHqt_FflR_2XcBg" />
   <style>
     :root{color-scheme:light;--bg:#f7f9fc;--card:#fff;--text:#18243a;--muted:#64748b;--line:#e3e8f0;--accent:#2563eb;--soft:#eaf1ff;--shadow:0 18px 55px #1725540c}
@@ -56,10 +56,11 @@
 <body>
   <header>
     <nav class="wrap">
-      <a class="brand" href="{{ url_for('home_page') }}">🗳️ Vote<span>Sphere</span></a>
+      <a class="brand" href="{{ url_for('home_page') }}">
+    🗳️ Civic<span>Vote Portal</span>
+      </a>
       <div class="nav-right">
-        <a class="developer" href="https://youtube.com/@wanocoder?si=_owoAC36_BVS1_Lf" target="_blank"
-         rel="noopener noreferrer">Developed by <b>@WanoCoder</b></a>
+        <a class= "developer" href="https://www.youtube.com/@wanocoder"> @Wano Coder </a>
         <button class="btn theme" id="themeToggle" type="button"
                 aria-label="Switch colour theme" title="Switch theme">☾</button>
         <a class="btn" href="{{ url_for('login') }}">Login</a>
@@ -74,9 +75,10 @@
         <span class="eyebrow">ELECTION MANAGEMENT PROJECT</span>
         <h1>A clearer way to manage <span>elections.</span></h1>
         <p class="intro">
-          VoteSphere is a web-based election management project designed
-          to organize voter registration, candidate information, and
-          election administration through a simple, accessible interface.
+          CivicVote Portal is an independent educational project
+designed to demonstrate voter registration, candidate
+applications, and election administration through a
+web-based application.
         </p>
         <div class="actions">
           <a class="btn primary" href="{{ url_for('register_page') }}">Get started &rarr;</a>
@@ -116,7 +118,7 @@
 
   <footer>
     <div class="wrap foot">
-      <p>© <span id="year"></span> VoteSphere · Developed by @WanoCoder</p>
+    <p> © <span id="year"></span> CivicVote Portal · Developed by @WanoCoder </p>
       <p>Questions or feedback? <a href="mailto:Yogeshwanocoder@gmail.com">Yogeshwanocoder@gmail.com</a></p>
     </div>
   </footer>
