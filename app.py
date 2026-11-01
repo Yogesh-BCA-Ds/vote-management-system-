@@ -6,7 +6,7 @@ from backend.auth import approved_required, owner_required
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 import os
-import psyconpg2
+import psycopg2
 from psycopg2.extras import RealDictCursor
 import re
 import click
@@ -61,7 +61,6 @@ def get_db():
     
 def refresh_election_status():
     now = datetime.utcnow() + timedelta(hours=5, minutes=30)
-    now_text = now.strftime("%Y-%m-%d %H:%M:%S")
 
     conn = get_db()
     try:
@@ -69,17 +68,17 @@ def refresh_election_status():
             UPDATE election
             SET status = CASE
                 WHEN status = 'cancelled' THEN 'cancelled'
-                WHEN start_date > ? THEN 'upcoming'
-                WHEN end_date > ? THEN 'ongoing'
+                WHEN start_date > %s THEN 'upcoming'
+                WHEN end_date > %s THEN 'ongoing'
                 ELSE 'completed'
             END
-        """, (now_text, now_text))
+        """, (now, now))
 
         conn.commit()
     finally:
         conn.close()
 
-@app.befor_request
+@app.before_request
 def update_election_status():
     refresh_election_status()
     
@@ -109,7 +108,7 @@ def login():
             SELECT user_id, username, password, role,
                    is_verified, application_status, is_owner
             FROM newuser
-            WHERE username = ?
+            WHERE username = %s
         """, (username,)).fetchone()
 
         if not user:
@@ -133,8 +132,8 @@ def login():
             password_matches = True
             conn.execute("""
                 UPDATE newuser
-                SET password = ?
-                WHERE user_id = ?
+                SET password = %s
+                WHERE user_id = %s
             """, (
                 generate_password_hash(password),
                 user["user_id"]
@@ -160,7 +159,7 @@ def login():
                 error="Your application was rejected. Please contact the owner."
             ), 403
             
-        if (user["application_status"] != "approved" or user["is_verified"] != 1):
+        if (user["application_status"] != "approved" or not user["is_verified"]):
             return render_template("index.html",error = "your application is pending approval. please try again later"),403
 
         session.clear()
@@ -170,7 +169,7 @@ def login():
         conn.execute("""
             UPDATE newuser
             SET last_login = CURRENT_TIMESTAMP
-            WHERE user_id = ?
+            WHERE user_id = %s
         """, (user["user_id"],))
         conn.commit()
 
@@ -178,7 +177,7 @@ def login():
             profile = conn.execute("""
                 SELECT profile_id, is_active
                 FROM voters
-                WHERE user_id = ?
+                WHERE user_id = %s
             """, (user["user_id"],)).fetchone()
 
             if not profile:
@@ -187,7 +186,7 @@ def login():
                     username=user["username"]
                 )
 
-            if profile["is_active"] != 1:
+            if not profile["is_active"]:
                 session.clear()
                 return render_template(
                     "index.html",
@@ -226,7 +225,7 @@ def manager():
     try:
         user = conn.execute("""
             SELECT username FROM newuser
-            WHERE user_id = ?
+            WHERE user_id = %s
         """, (session["user_id"],)).fetchone()
     finally:
         conn.close()
@@ -340,7 +339,7 @@ def voter():
         return validation_error("Please enter a valid country name.")
 
     # 7. Save voter profile
-    conn = sqlite3.connect("database/vote_man.db")
+    conn = get_db()
 
     try:
         conn.execute("""
@@ -352,7 +351,7 @@ def voter():
                 state,
                 country
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (
             user_id,
             phone,
@@ -531,7 +530,7 @@ def admin():
                 status,
                 election_type
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             title,
             start_date,
@@ -622,7 +621,7 @@ def data():
         existing = conn.execute("""
             SELECT user_id
             FROM newuser
-            WHERE username = ? OR email = ?
+            WHERE username = %s OR email = %s
         """, (username, email)).fetchone()
 
         if existing:
@@ -637,7 +636,7 @@ def data():
                 email, password, role,
                 is_verified, application_status, is_owner
             )
-            VALUES (?, ?, ?, ?, ?, ?, 0, 'pending', 0)
+            VALUES (%s, %s, %s, %s, %s, %s, FALSE, 'pending', 0)
         """, (
             first_name,
             last_name,
@@ -667,7 +666,6 @@ def data():
 @approved_required("candidate")
 def candidate():
     conn = get_db()
-    conn.row_factory = sqlite3.Row
 
     if request.method == "GET":
 
@@ -736,7 +734,7 @@ def candidate():
         error="Manifesto cannot exceed 1000 characters."), 400
 
     election = conn.execute(
-    "SELECT election_id FROM election WHERE election_id = ?",(election_id,)).fetchone()
+    "SELECT election_id FROM election WHERE election_id = %s",(election_id,)).fetchone()
 
     if election is None:
         conn.close()
@@ -747,7 +745,7 @@ def candidate():
     conn.execute("""
         INSERT INTO candidate
         (election_id, name, party, manifesto)
-        VALUES (?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s)
     """, (
         election_id,
         name,
@@ -769,25 +767,24 @@ def candidate():
 def voter_dashboard():
     conn = get_db()
     now = datetime.utcnow() + timedelta(hours=5, minutes=30)
-    now_text = now.strftime("%Y-%m-%d %H:%M:%S")
     conn.execute("""
     UPDATE election
     SET status = CASE
-        WHEN start_date > ? THEN 'upcoming'
-        WHEN end_date > ? THEN 'ongoing'
+        WHEN start_date > %s THEN 'upcoming'
+        WHEN end_date > %s THEN 'ongoing'
         ELSE 'completed'
     END
-    """, (now_text, now_text))
+    """, (now, now))
 
     conn.commit()
     try:
         profile = conn.execute("""
             SELECT is_active
             FROM voters
-            WHERE user_id = ?
+            WHERE user_id = %s
         """, (session["user_id"],)).fetchone()
 
-        if not profile or profile["is_active"] != 1:
+        if not profile or not profile["is_active"]:
             abort(403, description="An active voter profile is required.")
 
         elections = conn.execute("""
@@ -817,17 +814,17 @@ def view_election():
         profile = conn.execute("""
             SELECT is_active
             FROM voters
-            WHERE user_id = ?
+            WHERE user_id = %s
         """, (session["user_id"],)).fetchone()
 
-        if not profile or profile["is_active"] != 1:
+        if not profile or not profile["is_active"]:
             abort(403, description="An active voter profile is required.")
 
         # Fetch the selected election
         election = conn.execute("""
             SELECT *
             FROM election
-            WHERE election_id = ?
+            WHERE election_id = %s
         """, (election_id,)).fetchone()
 
         if not election:
@@ -837,7 +834,7 @@ def view_election():
         candidates = conn.execute("""
             SELECT *
             FROM candidate
-            WHERE election_id = ?
+            WHERE election_id = %s
         """, (election_id,)).fetchall()
 
     finally:
@@ -888,7 +885,7 @@ def review_application(user_id):
         applicant = conn.execute("""
             SELECT user_id, role, application_status
             FROM newuser
-            WHERE user_id = ?
+            WHERE user_id = %s
               AND role IN ('voter', 'candidate')
         """, (user_id,)).fetchone()
 
@@ -902,30 +899,30 @@ def review_application(user_id):
             conn.execute("""
                 UPDATE newuser
                 SET application_status = 'approved',
-                    is_verified = 1
-                WHERE user_id = ?
+                    is_verified = TRUE
+                WHERE user_id = %s
             """, (user_id,))
 
             if applicant["role"] == "voter":
                 conn.execute("""
                     UPDATE voters
-                    SET is_active = 1
-                    WHERE user_id = ?
+                    SET is_active = TRUE
+                    WHERE user_id = %s
                 """, (user_id,))
 
         else:
             conn.execute("""
                 UPDATE newuser
                 SET application_status = 'rejected',
-                    is_verified = 0
-                WHERE user_id = ?
+                    is_verified = FALSE
+                WHERE user_id = %s
             """, (user_id,))
 
             if applicant["role"] == "voter":
                 conn.execute("""
                     UPDATE voters
-                    SET is_active = 0
-                    WHERE user_id = ?
+                    SET is_active = FALSE
+                    WHERE user_id = %s
                 """, (user_id,))
 
         conn.commit()
